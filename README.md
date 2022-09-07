@@ -1,1 +1,3 @@
-# lrgasp-challenge-3_benchmarking_docker
+# Long-read RGASP (LRGASP) challenge 3 benchmarking with OpenEBench
+
+Long-read RGASP (LRGASP) challenge 3 benchmarking Docker
