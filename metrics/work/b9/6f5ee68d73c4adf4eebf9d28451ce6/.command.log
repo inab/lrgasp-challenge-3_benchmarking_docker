@@ -1,0 +1,96 @@
+R scripting front-end version 4.1.3 (2022-03-10)
+usage: sqanti3_lrgasp.challenge3.py [-h] [--min_ref_len MIN_REF_LEN]
+                                    [--force_id_ignore]
+                                    [--aligner_choice {minimap2,deSALT,gmap}]
+                                    [--cage_peak CAGE_PEAK]
+                                    [--polyA_motif_list POLYA_MOTIF_LIST]
+                                    [--polyA_peak POLYA_PEAK]
+                                    [--phyloP_bed PHYLOP_BED] [--skipORF]
+                                    [--is_fusion] [--orf_input ORF_INPUT] [-g]
+                                    [-e EXPRESSION] [-x GMAP_INDEX] [-t CPUS]
+                                    [-n CHUNKS] [-o OUTPUT] [-d DIR]
+                                    [-c COVERAGE] [-s SITES] [-w WINDOW]
+                                    [--genename] [-fl FL_COUNT] [-v]
+                                    [--isoAnnotLite] [--gff3 GFF3]
+                                    [--experiment_json EXPERIMENT_JSON]
+                                    [--entry_json ENTRY_JSON]
+                                    isoforms annotation genome
+
+Structural and Quality Annotation of Novel Transcript Isoforms
+
+positional arguments:
+  isoforms              Isoforms (FASTA/FASTQ) or GTF format. Recommend
+                        provide GTF format with the --gtf option.
+  annotation            Reference annotation file (GTF format)
+  genome                Reference genome (Fasta format)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --min_ref_len MIN_REF_LEN
+                        Minimum reference transcript length (default: 0 bp)
+  --force_id_ignore     Allow the usage of transcript IDs non related with
+                        PacBio's nomenclature (PB.X.Y)
+  --aligner_choice {minimap2,deSALT,gmap}
+  --cage_peak CAGE_PEAK
+                        FANTOM5 Cage Peak (BED format, optional)
+  --polyA_motif_list POLYA_MOTIF_LIST
+                        Ranked list of polyA motifs (text, optional)
+  --polyA_peak POLYA_PEAK
+                        PolyA Peak (BED format, optional)
+  --phyloP_bed PHYLOP_BED
+                        PhyloP BED for conservation score (BED, optional)
+  --skipORF             Skip ORF prediction (to save time)
+  --is_fusion           Input are fusion isoforms, must supply GTF as input
+                        using --gtf
+  --orf_input ORF_INPUT
+                        Input fasta to run ORF on. By default, ORF is run on
+                        genome-corrected fasta - this overrides it. If input
+                        is fusion (--is_fusion), this must be provided for ORF
+                        prediction.
+  -g, --gtf             Use when running SQANTI by using as input a gtf of
+                        isoforms
+  -e EXPRESSION, --expression EXPRESSION
+                        Expression matrix (supported: Kallisto tsv)
+  -x GMAP_INDEX, --gmap_index GMAP_INDEX
+                        Path and prefix of the reference index created by
+                        gmap_build. Mandatory if using GMAP unless -g option
+                        is specified.
+  -t CPUS, --cpus CPUS  Number of threads used during alignment by aligners.
+                        (default: 10)
+  -n CHUNKS, --chunks CHUNKS
+                        Number of chunks to split SQANTI3 analysis in for
+                        speed up (default: 1).
+  -o OUTPUT, --output OUTPUT
+                        Prefix for output files.
+  -d DIR, --dir DIR     Directory for output files. Default: Directory where
+                        the script was run.
+  -c COVERAGE, --coverage COVERAGE
+                        Junction coverage files (provide a single file, comma-
+                        delmited filenames, or a file pattern, ex:
+                        "mydir/*.junctions").
+  -s SITES, --sites SITES
+                        Set of splice sites to be considered as canonical
+                        (comma-separated list of splice sites). Default:
+                        GTAG,GCAG,ATAC.
+  -w WINDOW, --window WINDOW
+                        Size of the window in the genomic DNA screened for
+                        Adenine content downstream of TTS
+  --genename            Use gene_name tag from GTF to define genes. Default:
+                        gene_id used to define genes
+  -fl FL_COUNT, --fl_count FL_COUNT
+                        Full-length PacBio abundance file
+  -v, --version         Display program version number.
+  --isoAnnotLite        Run isoAnnot Lite to output a tappAS-compatible gff3
+                        file
+  --gff3 GFF3           Precomputed tappAS species specific GFF3 file. It will
+                        serve as reference to transfer functional attributes
+  --experiment_json EXPERIMENT_JSON
+                        Experiment JSON file that is requiered for uploading
+                        the submission. More info here:
+                        https://lrgasp.github.io/lrgasp-
+                        submissions/docs/metadata.html
+  --entry_json ENTRY_JSON
+                        Entry JSON file that is requiered for uploading the
+                        submission. More info here:
+                        https://lrgasp.github.io/lrgasp-
+                        submissions/docs/metadata.html

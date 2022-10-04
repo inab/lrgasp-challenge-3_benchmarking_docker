@@ -16,9 +16,8 @@ if (params.help) {
 	    Mandatory arguments:
                 --input                 FASTA file submitted by the participants
                 --community_id          Name or OEB permanent ID for the benchmarking community
-                --public_ref_dir        Directory with list of cancer genes used to validate the FASTA file
+                --public_ref_dir        Directory with public reference genome and annotation files
                 --participant_id        Name of the pipeline used for benchmarking
-                --goldstandard_dir      ‘reference data’ to compute the metrics are found (BUSCO data)
                 --challenges_ids        list of challenges (performance evaluation methods) which are performed in the benchmark (Num. Isoforms detected/% Mapping to genome/% Multi-exonic isoforms/% Full Illumin support/SIRVs/)
                 --assess_dir            directory where the performance metrics for other participants to be compared with the submitted one are found
 	    Other options:
@@ -53,24 +52,6 @@ if (params.help) {
          data model export directory: ${params.data_model_export_dir}
          """
 }
-"""
-input = file(params.input)
-community_id = params.community_id
-
-ref_dir = Channel.fromPath( params.public_ref_dir, type: 'dir' )
-tool_name = params.participant_id.replaceAll("\\s","_")
-gold_standards_dir = Channel.fromPath(params.goldstandard_dir, type: 'dir' )
-cancer_types = params.challenges_ids
-benchmark_data = Channel.fromPath(params.assess_dir, type: 'dir' )
-
-// output
-validation_file = file(params.validation_result)
-assessment_file = file(params.assessment_results)
-assessment_results = file(params.outdir, type: 'dir')
-augmented_benchmark_data = file(params.augmented_assess_dir, type: 'dir')
-// It is really a file in this implementation
-other_dir = file(params.otherdir, type: 'dir')
-"""
 participant_id = params.participant_id
 community_id = params.community_id
 challenges_ids = params.challenges_ids
@@ -158,8 +139,6 @@ process consolidation {
 	python /app/merge_data_model_files.py --participant_data $aggregation_dir --metrics_data $metrics_data --output $data_model_export_dir
     """
 }
-
-
 
 workflow.onComplete { 
 	println ( workflow.success ? "LRGASP challenge 3 benchmarking finished!!!" : "Oops .. something went wrong" )

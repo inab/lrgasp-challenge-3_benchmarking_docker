@@ -1,0 +1,59 @@
+{
+    "_id": "OEBD00X00000NO",
+    "challenge_ids": [
+        "mouse_full_Illumina_support_vs_coding_transcripts"
+    ],
+    "datalink": {
+        "inline_data": {
+            "challenge_participants": [
+                {
+                    "metric_x": 42.739130434783,
+                    "metric_y": 65.1685393258427,
+                    "participant_id": "fake_pipeline_1"
+                },
+                {
+                    "metric_x": 10.033444816054,
+                    "metric_y": 22.32558139534884,
+                    "participant_id": "fake_pipeline_2"
+                },
+                {
+                    "metric_x": 42.54180602006689,
+                    "metric_y": 30.12875536480687,
+                    "participant_id": "fake_pipeline_3"
+                },
+                {
+                    "metric_x": 22.14046822742475,
+                    "metric_y": 37.28813559322035,
+                    "participant_id": "fake_pipeline_4"
+                },
+                {
+                    "metric_x": 18.361204013377926,
+                    "metric_y": 48.780487804878,
+                    "participant_id": "fake_pipeline_5"
+                },
+                {
+                    "metric_x": 14.715719063545152,
+                    "metric_y": 66.6666666666666,
+                    "participant_id": "fake_pipeline_6"
+                },
+                {
+                    "metric_x": 47.82608695652173,
+                    "metric_y": 38.666666666666667,
+                    "participant_id": "fake_pipeline_7"
+                },
+                {
+                    "metric_x": 21.17056856187291,
+                    "metric_y": 48.3870967741935,
+                    "participant_id": "fake_pipeline_8"
+                }
+            ],
+            "visualization": {
+                "type": "2D-plot",
+                "x_axis": "% non-canonical SJ",
+                "y_axis": "% SJ with SR coverage"
+            }
+        }
+    },
+    "type": "aggregation"
+}
+

@@ -1,0 +1,2 @@
+WARNING: Experiment JSON wasn't provided. A fake one will be used (you can find it in utilities/experiment_dummy.json ). This might have an effect on the evaluation since spike-ins are different for mouse (Lexogen SIRVs Set4) and manatee (Lexogen SIRVs Set1) samples. Please, check at least the **species** field of the JSON file.
+WARNING: Entry JSON wasn't provided. A fake one will be used (you can find it in utilities/entry_dummy.json ). This won't have an effect on the evaluation, but you will find the made-up attributes in your report titles.

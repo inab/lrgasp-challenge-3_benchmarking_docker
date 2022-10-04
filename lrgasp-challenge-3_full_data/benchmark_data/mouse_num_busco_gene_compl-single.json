@@ -1,0 +1,11 @@
+[
+    {"toolname":"fake_pipeline_1","mode":"lines","type":"bar-plot","metric_value":9932},
+    {"toolname":"fake_pipeline_2","mode":"lines","type":"bar-plot","metric_value":9936},
+    {"toolname":"fake_pipeline_3","mode":"lines","type":"bar-plot","metric_value":9923.9999999999999},
+    {"toolname":"fake_pipeline_4","mode":"lines","type":"bar-plot","metric_value":7937},
+    {"toolname":"fake_pipeline_5","mode":"lines","type":"bar-plot","metric_value":8926},
+    {"toolname":"fake_pipeline_6","mode":"lines","type":"bar-plot","metric_value":9933},
+    {"toolname":"fake_pipeline_7","mode":"lines","type":"bar-plot","metric_value":6928.9999999999999},
+    {"toolname":"fake_pipeline_8","mode":"lines","type":"bar-plot","metric_value":9932.9999999999999}
+ ]
+
