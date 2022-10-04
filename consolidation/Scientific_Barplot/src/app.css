@@ -1,0 +1,111 @@
+.benchmarkingTable_bars td {
+    border: 2px solid black;
+    border-collapse: collapse;
+    text-align: center;
+    font-size: .8vw;
+}
+
+.benchmarkingTable_bars {
+	order: 2;
+    width: 18vw;
+    border-collapse: collapse;
+    background-color: #f0f0f0;
+    border: 5px solid black;
+    margin-left: 1vw;
+    /* height: 27.5vh;
+    overflow-y: scroll; */
+}
+
+.benchmarkingSVG{
+  order:1;
+  width: 100% !important;
+}
+
+.benchmarkingChart_bars{
+    width: inherit;
+}
+
+.flex-container {
+	width: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+	margin-top: 15px;
+}
+
+.bar:hover {
+	fill: orangered;
+}
+
+.x.axis path {
+	display: none;
+}
+
+.d3-tip {
+	line-height: 1;
+	font-weight: bold;
+	padding: 12px;
+	background: rgba(0, 0, 0, 0.8);
+	color: #fff;
+	border-radius: 2px;
+	z-index: 3;
+}
+
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+	box-sizing: border-box;
+	display: inline;
+	font-size: 10px;
+	width: 100%;
+	line-height: 1;
+	color: rgba(0, 0, 0, 0.8);
+	content: '\25BC';
+	position: absolute;
+	text-align: center;
+}
+
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+	margin: -1px 0 0 0;
+	top: 100%;
+	left: 0;
+}
+
+.classificator_button {
+	order:1;
+	background-color: #0A58A2;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 1vw;
+	padding-left: 25px;
+	padding-right: 25px;
+	text-align: center;
+	width: 20vw;
+	align-self: left;
+}
+
+.classificator_button:hover {
+	background-color: #b3cde0;
+}
+
+.buttons_container{
+	width: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+}
+
+.download_button{
+	background-color: #0a58a2;
+	border-radius: 8px;
+	color: #fff;
+	font-size: 1vw;
+	text-align: center;
+	width: 10vw;
+	cursor: pointer;
+  }
+
+  .download_div {
+	order:2;
+	padding-left: .5vw;
+  }
