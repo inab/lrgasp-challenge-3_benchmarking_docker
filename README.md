@@ -5,12 +5,16 @@ The consortium will generate cDNA and direct RNA datasets using different platfo
 ## Usage
 1. Install [Nextflow](https://www.nextflow.io/) and [docker](https://www.docker.com/).
 2. Clone this **repository**, and go to the root of this directory.
-3. Run the pipeline with the following command:
+3. Download the public reference data from: https://drive.google.com/file/xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+4. Perpare example data
+   1. `public_ref`: Extract and copy `lrgasp_grcm39_sirvs.fasta` and `lrgasp_sirvs4.gtf` file (in `reference` folder) to `public_ref` folder
+   2. `input_data`: Extract and copy `rna.fasta`, `entry.json`, and `experiment.json` file (in `mouse_SPbU_cDNA_PacBio` folder) to `input_data` folder 
+5. Run the pipeline with the following command:
 ```
 ./build_dockers.sh 0.2.0
 nextflow run main.nf
 ```
-4. The results will be in the `test_results` directory.
+6. The results will be in the `test_results` directory.
 
 ## Repository Structure
 ```
@@ -31,9 +35,9 @@ LRGASP challenge 3 benchmarking project
 │   │   ...
 │
 └───full_data
-│   │   participant_data
+│   │   input_data
 │   │   public_ref
-│   │   metrics_ref
+│   │   benchmark_ref
 │   │   ...
 │
 └───test_result
