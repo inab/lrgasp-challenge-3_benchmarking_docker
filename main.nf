@@ -93,16 +93,17 @@ process validation {
 }
 
 process compute_metrics {
+
+    publishDir "${assessment_results.parent}", saveAs: { filename -> assessment_results.name }, mode: 'copy'
+
     input:
     val file_validated from EXIT_STAT_VAL
     val challenges_ids
 
     file input
 
-    path assessment_results
     path public_ref_dir
     path goldstandard_dir
-
 
     output:
     val task.exitStatus into EXIT_STAT_COMP
@@ -115,7 +116,7 @@ process compute_metrics {
 
 	"""
 	source activate sqanti_env
-	python /app/sqanti3_lrgasp.challenge3.py $input $public_ref_dir $challenges_ids -d $assessment_results -c $goldstandard_dir
+	python /app/sqanti3_lrgasp.challenge3.py $input $public_ref_dir $challenges_ids -c $goldstandard_dir
 	"""
 }
 
