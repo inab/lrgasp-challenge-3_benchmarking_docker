@@ -1,6 +1,5 @@
 #!/usr/bin/env nextflow
 
-
 if (params.help) {
 	    log.info"""
 	    ==============================================
