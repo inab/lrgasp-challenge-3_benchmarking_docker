@@ -128,17 +128,8 @@ def validate_input_data(input, public_ref_dir, community_id, challenges_ids, par
     # write participant JSON file
     if validated:
         print("Validation Finished! Input and metadata is valid. Validation result is written to " + out_path)
-        output_json = JSON_templates.write_participant_dataset(ID, community_id, challenges_ids, participant_id, validated)
-        # create out_path if it does not exist
-        if not os.path.exists(out_path):
-            try:
-                os.makedirs(out_path, exist_ok=True)
-                with open(out_path, mode="a"):
-                        pass
-            except OSError as exc:
-                print("OS error: {0}".format(exc) + "\nCould not create output path: " + out_path)
-        # write participant JSON file
-        with open(out_path+"validation.json", 'w') as outfile:
+        output_json = JSON_templates.write_participant_dataset(ID, community_id, challenges_ids, participant_id, validated)        # write participant JSON file
+        with open(out_path, 'w') as outfile:
             json.dump(output_json, outfile, sort_keys=True, indent=4, separators=(',', ': '))
 
 
