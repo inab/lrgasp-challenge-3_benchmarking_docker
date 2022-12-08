@@ -1572,7 +1572,7 @@ def isoformClassification(args, isoforms_by_chr, refs_1exon_by_chr, refs_exons_b
     ## read coverage files if provided
     if args.coverage is not None:
         print("**** Reading Splice Junctions coverage files.", file=sys.stdout)
-        SJcovNames, SJcovInfo = STARcov_parser(args.coverage)
+        SJcovNames, SJcovInfo = STARcov_parser(args.coverage + "splice_junctions.bed")
         fields_junc_cur = FIELDS_JUNC + SJcovNames  # add the samples to the header
     else:
         SJcovNames, SJcovInfo = None, None

@@ -39,10 +39,9 @@ if (params.help) {
          LRGASP CHALLENAGE 3 BENCHMARKING PIPELINE
          =========================================
          input file: ${params.input}
-         experiment json file: ${params.experiment_json}
-         entry json file: ${params.entry_json}
          community id: ${params.community_id}
-         public reference directory: ${params.public_ref_dir}
+         gold standard: ${params.public_ref_dir}
+         public reference directory: ${params.goldstandard_dir}
          participant id: ${params.participant_id}
          challenges ids: ${params.challenges_ids}
          assess directory: ${params.assess_dir}
@@ -52,20 +51,21 @@ if (params.help) {
          data model export directory: ${params.data_model_export_dir}
          """
 }
+
 participant_id = params.participant_id
 community_id = params.community_id
 challenges_ids = params.challenges_ids
 
 input = file(params.input)
-experiment_json = file(params.experiment_json)
-entry_json = file(params.entry_json)
-validation_result = file(params.validation_result)
+
+goldstandard_dir = file(params.goldstandard_dir)
+
 data_model_export_dir = file(params.data_model_export_dir)
 validation_result = file(params.validation_result)
 
 public_ref_dir = file(params.public_ref_dir, type: 'dir' )
 assessment_results = file(params.assessment_results, type: 'dir' )
-metrics_data = file(params.metrics_data, type: 'dir' )
+metrics_data = file(params.otherdir, type: 'dir' )
 
 assess_dir = Channel.fromPath(params.assess_dir, type: 'dir' )
 aggregation_dir = Channel.fromPath(params.outdir, type: 'dir')
@@ -74,8 +74,6 @@ aggregation_dir = Channel.fromPath(params.outdir, type: 'dir')
 process validation {
     input:
     file input
-    file experiment_json
-    file entry_json
     file validation_result
 
     val community_id
@@ -83,6 +81,7 @@ process validation {
     val participant_id
 
     path public_ref_dir
+    path goldstandard_dir
 
     output:
     val task.exitStatus into EXIT_STAT_VAL
@@ -90,7 +89,7 @@ process validation {
 
     script:
     """
-    python /app/validation.py -i $input  -com $community_id -c $challenges_ids -p $participant_id -r $public_ref_dir --experiment_json $experiment_json  --entry_json $entry_json -o $validation_result
+    python /app/validation.py -i $input  -com $community_id -c $challenges_ids -p $participant_id -r $public_ref_dir -o $validation_result --coverage $goldstandard_dir
     """
 }
 
@@ -100,11 +99,10 @@ process compute_metrics {
     val challenges_ids
 
     file input
-    file experiment_json
-    file entry_json
 
     path assessment_results
     path public_ref_dir
+    path goldstandard_dir
 
 
     output:
@@ -118,7 +116,7 @@ process compute_metrics {
 
 	"""
 	source activate sqanti_env
-	python /app/sqanti3_lrgasp.challenge3.py $input $public_ref_dir $challenges_ids --experiment_json $experiment_json  --entry_json $entry_json  -d $assessment_results
+	python /app/sqanti3_lrgasp.challenge3.py $input $public_ref_dir $challenges_ids -d $assessment_results -c $goldstandard_dir
 	"""
 }
 
