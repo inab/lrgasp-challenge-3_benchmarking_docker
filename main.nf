@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.enable.dsl=1
+
 
 if (params.help) {
 	    log.info"""
