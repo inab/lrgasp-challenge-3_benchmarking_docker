@@ -474,13 +474,19 @@ def get_corrBam_from_corrSam(sam):
     return corrBam
 
 
-def run_BUSCO(correctedFASTA, cpus, output_dir):
+def run_BUSCO(correctedFASTA, cpus, output_dir, ref_dir):
     summary_file = output_dir + "/BUSCO_analysis/short_summary.specific.eutheria_odb10.BUSCO_analysis.txt"
     if os.path.exists(summary_file):
         print("WARNING: Using previously calculated BUSCO output:  " + str(summary_file))
     else:
-        subprocess.call(['busco', '-i', str(correctedFASTA), '-l', 'eutheria_odb10', '--out_path', output_dir, '-o',
-                         'BUSCO_analysis', '-m', 'transcriptome', '-c', str(cpus)])
+        subprocess.call(['busco', '-i', str(correctedFASTA),
+                         '-l', ref_dir + "/busco_data/lineages/eutheria_odb10/",
+                         '--out_path', output_dir,
+                         '--offline',
+                         '--download_path', ref_dir + "/busco_data/",
+                         '-o', 'BUSCO_analysis',
+                         '-m', 'transcriptome',
+                         '-c', str(cpus)])
     summary = open(summary_file, "r")
     table = {}
     for line in summary:
@@ -2069,7 +2075,7 @@ def run(args):
                     r['RTS_junction'] = 'FALSE'
             fout_junc.writerow(r)
     # Run BUSCO analysis
-    busco_tsv = run_BUSCO(corrFASTA, args.cpus, args.dir)
+    busco_tsv = run_BUSCO(corrFASTA, args.cpus, args.dir, args.ref_dir)
     ## Generating report
     if not args.skip_report:
         print("**** Generating SQANTI3 report....", file=sys.stderr)
@@ -2388,8 +2394,8 @@ def main():
     parser.add_argument('-e', '--expression', help='\t\tExpression matrix (supported: Kallisto tsv)', required=False)
     parser.add_argument('-x', '--gmap_index',
                         help='\t\tPath and prefix of the reference index created by gmap_build. Mandatory if using GMAP unless -g option is specified.')
-    parser.add_argument('-t', '--cpus', default=10, type=int,
-                        help='\t\tNumber of threads used during alignment by aligners. (default: 10)')
+    parser.add_argument('-t', '--cpus', default=15, type=int,
+                        help='\t\tNumber of threads used during alignment by aligners. (default: 15)')
     parser.add_argument('-n', '--chunks', default=1, type=int,
                         help='\t\tNumber of chunks to split SQANTI3 analysis in for speed up (default: 1).')
     # parser.add_argument('-z', '--sense', help='\t\tOption that helps aligners know that the exons in you cDNA sequences are in the correct sense. Applicable just when you have a high quality set of cDNA sequences', required=False, action='store_true')
