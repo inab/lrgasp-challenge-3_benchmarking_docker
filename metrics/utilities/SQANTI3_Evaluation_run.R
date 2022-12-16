@@ -17,10 +17,8 @@ platform <- args[5]
 rdata <- args[6]
 busco <- args[7]
 organism <- args[8]
-challenges_ids <- args[9]
 
-challenges_ids <- strsplit(challenges_ids, " ")[[1]]
-print(challenges_ids)
+
 report.prefix <- strsplit(class.file, "_classification.txt")[[1]][1];
 report.file <- paste(report.prefix, "Evaluation_report.html", sep="_");
 bam_file <- paste(report.prefix, "corrected.bam", sep="_")
@@ -50,7 +48,6 @@ LRGASP_calculations_challenge3(NAME = name , out.dir = rdata,
                       functions.dir = utilities.path,
                       bam = bam_file,
                       organism = organism,
-                      challenges_ids = challenges_ids,
                       busco = busco)
 
 #RMD = paste(utilities.path, "Evaluation_metrics.Rmd", sep = "/")

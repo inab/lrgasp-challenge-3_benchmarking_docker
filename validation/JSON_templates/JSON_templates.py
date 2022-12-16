@@ -42,7 +42,6 @@ def write_participant_dataset(ID, community, challenges, participant_name, valid
             "status": status
         },
         "participant_id": participant_name,
-
     }
 
     # validate the generated object with the minimal JSON schema
@@ -85,7 +84,6 @@ def write_assessment_dataset(ID, community, challenge, participant_name, metric,
                     "stderr": error
                     },
         "participant_id": participant_name
-
     }
 
     # validate the generated object with the minimal JSON schema

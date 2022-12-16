@@ -1,7 +1,7 @@
 ### Challenge 3 version by Fran. Jul 2021
 ### Challenge 3 version for OpenEBench Tian. Sep 2022
 
-LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir, platform, functions.dir, bam, organism, challenges_ids, busco) {
+LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir, platform, functions.dir, bam, organism, busco) {
   # Get functions and spike-ins IDs
   setwd(functions.dir)
   source("LRGASP_functions.R")
@@ -40,13 +40,13 @@ LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir
   
   write.table(sqanti_data, class.file, quote=F, sep = "\t", row.names = FALSE)
 
-# separate spike-ins and isoforms
+  # separate spike-ins and isoforms
   sirv_data=sqanti_data[grep("SIRV",sqanti_data$chrom),]
   sirv_data.junc=sqanti_data.junc[grep("SIRV",sqanti_data.junc$chrom),]
   ercc_data=sqanti_data[grep("ERCC",sqanti_data$chrom),]
   ercc_data.junc=sqanti_data.junc[grep("ERCC",sqanti_data.junc$chrom),]
 
-### remove SIRV and ERCC transcripts from sqanti data
+  ### remove SIRV and ERCC transcripts from sqanti data
   sqanti_data=sqanti_data[grep("SIRV|ERCC",sqanti_data$chrom, invert=T),]
   sqanti_data.junc=sqanti_data.junc[grep("SIRV|ERCC",sqanti_data.junc$chrom, invert=T),]
   
@@ -194,112 +194,12 @@ LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir
   total_BUSCO = sum(busco_results[,"Absolute value"])
   busco_results[,"Relative value (%)"] = apply(busco_results,1, function(Z){
     round( ((Z[1]/total_BUSCO)*100), digits = 2)
-  })
-  
-  save(busco_results , file = paste(name, "_BUSCO.RData", sep = ''))
+    })
 
 
-  #### Dump the results to a json file follow following format:
-  #{
-  #  "_id": "fake1",
-  #  "community_id": "LRGASP",
-  #  "challenge_id": "challenge3",
-  #  "type": "assessment",
-  #  "metrics": {
-  #              "metric_id": "precision",
-  #              "value": 0.5,
-  #              "stderr": 0,
-  #              },
-  #  "participant_id": "fake_mouse"
-  #}
-  library(rjson)
-  
-  precision_recall_results <- function(precision_or_recall, data, challenge) {
-      results <- list()
-      results$`_id` <- paste0("challenge3_", NAME)
-      results$`community_id` <- "LRGASP"
-      results$`challenge_id` <- challenge
-      results$`type` <- "assessment"
-      results$`metrics`<- list(metric_id = precision_or_recall,
-                               value = data,
-                               stderr = 0) 
-      results$`participant_id` <- NAME
-      results_json = toJSON(results)
-      write(results_json, file = paste0(out.dir,"/challenge3_", NAME, "_", precision_or_recall, "_", challenge, ".json"))
-  }
-  
-  barplot_result <- function(matrix_name, data, challenge) {
-    results <- list()
-    results$`_id` <- paste0("challenge3_", NAME)
-    results$`community_id` <- "LRGASP"
-    results$`challenge_id` <- challenge
-    results$`type` <- "barplot"
-    results$`metrics`<- list(metric_id = matrix_name,
-                             value = data)
-    results$`participant_id` <- NAME
-    results_json = toJSON(results)
-    write(results_json, file = paste0(out.dir,"/challenge3_", NAME, "_", matrix_name, "_", challenge, ".json"))
-  }
-  
-  for (challenge_name in challenges_ids) {
-    if (challenge_name == "mouse_sirvs") {
-      precision_recall_results("Precision", as.numeric(round(RM/SIRVs_transcripts, digits = 2)), challenge_name)
-      precision_recall_results("Sensitivity", as.numeric(round(TP/length(sirv_list), digits = 2)), challenge_name)
-    }
-    if (challenge_name == "mouse_num_iso") {
-      precision_recall_results("Number of transcripts", as.numeric(a.non_model_results["Number of transcripts", "Absolute value"]), challenge_name)
-      precision_recall_results("Number of mapping transcripts", as.numeric(a.non_model_results["Mapping transcripts", "Absolute value"]), challenge_name)
-    }
-    if (challenge_name == "mouse_full_Illumina_support_vs_coding_transcripts") {
-      precision_recall_results("Number of transcripts", as.numeric(a.non_model_results["Number of transcripts", "Absolute value"]), challenge_name)
-      precision_recall_results("Number of mapping transcripts", as.numeric(a.non_model_results["Mapping transcripts", "Absolute value"]), challenge_name)
-    }
-    if (challenge_name == "mouse_non-canonical_SJ_vs_SJ_SR_coverage") {
-      precision_recall_results("% non-canonical SJ", as.numeric(perc_SJ_non_canonical), challenge_name)
-      precision_recall_results("% SJ with SR coverage", as.numeric(perc_SJ_with_cov), challenge_name)
-    }
-    if (challenge_name == "mouse_full_Illumina_support_vs_coding_transcripts") {
-      precision_recall_results("% Full Illumina support", as.numeric(perc_full_Illumina_SJ_support), challenge_name)
-      precision_recall_results("% Coding transcripts", as.numeric(perc_coding), challenge_name)
-    }
-    if (challenge_name == "mouse_%_mapping_to_genome") {
-      barplot_result("% mapping to genome", as.numeric(mapping_rate), challenge_name)
-    }
-    if (challenge_name == "mouse_%_multi-exonic_isoforms") {
-      barplot_result("% multi-exonic isoforms", as.numeric(perc_coding), challenge_name)
-    }
-    if (challenge_name == "mouse_%_full_illumina_support") {
-      barplot_result("% full illumina support", as.numeric(perc_SJ_with_cov), challenge_name)
-    }
-    if (challenge_name == "mouse_num_busco_gene_compl-single") {
-      barplot_result("Complete and single-copy BUSCOs", as.numeric(busco_results$`Absolute value`[1]), challenge_name)
-    }
-    if (challenge_name == "mouse_num_busco_gene_compl-dupl") {
-      barplot_result("Complete and duplicated BUSCOs", as.numeric(busco_results$`Absolute value`[2]), challenge_name)
-    }
-    if (challenge_name == "mouse_num_busco_gene_fragment") {
-      barplot_result("Fragmented BUSCOs", as.numeric(busco_results$`Absolute value`[3]), challenge_name)
-    }
-    if (challenge_name == "mouse_num_busco_gene_missing") {
-      barplot_result("Missing BUSCOs", as.numeric(busco_results$`Absolute value`[4]), challenge_name)
-    }
-  }
-
-  ####Create a list with all results and save all
-  ###############################################
-  
-  #files <- ls(pattern = "_results")
-  #all.results <- list()
-  #for ( i in 1: length(files) ) {
-  #  all.results[[i]] <- eval(parse(text = files[i]))
-  # }
-  #setwd(out.dir)
-  #names(all.results) <- c("Transcriptome without reference", "SIRV")
-  #save(all.results , file = paste(NAME, "_results.RData", sep = ''))
-  #save(sqanti_data, file=paste(NAME, "_classification.RData", sep = ''))
-  #save(sqanti_data.junc, file=paste(NAME, "_junctions.RData", sep = ''))
-  #save(sirv_data, file=paste(NAME, "_SIRVs_class.RData", sep=''))
-  #save(sirv_data.junc, file=paste(NAME, "_SIRVs_junc.RData", sep=''))
-
+   # Write out results
+   write.table(a.non_model_results, file = paste0(out.dir, "/non_model_results.txt"), sep = "\t", quote = F, row.names = T)
+   write.table(b.SIRVs_results, file = paste0(out.dir, "/SIRVs_results.txt"), sep = "\t", quote = F, row.names = T)
+   write.table(busco_results, file = paste0(out.dir, "/BUSCO_results.txt"), sep = "\t", quote = F, row.names = T)
 }
 

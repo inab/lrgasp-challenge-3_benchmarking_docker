@@ -1,508 +1,231 @@
-from __future__ import division
+#!/usr/bin/env python3
 
-import collections
-import io
-import shutil
+from __future__ import division
+import requests
 import json
 import os
-import fnmatch
-from argparse import ArgumentParser
-import numpy as np
-import pandas
-import matplotlib
-
-matplotlib.use("PDF")
-import matplotlib.pyplot as plt
-
-plt.ioff()
 import logging
+import sys
+from argparse import ArgumentParser
+import datetime
+from assessment_chart import assessment_chart
 
-logger = logging.getLogger('manage_assessment_data')
+DEFAULT_eventMark = '2018-04-05'
+DEFAULT_OEB_API = "https://dev-openebench.bsc.es/api/scientific/graphql"
+DEFAULT_eventMark_id = "OEBE0010000000"
+METRICS = {"precision": "OEBM0010000001", "TPR": "OEBM0010000002"}
 
 
-def main(metrics_data_files, benchmark_data_dir, output_dir):
-    logger.debug('{}, {}, {}'.format(metrics_data_files, benchmark_data_dir, output_dir))
+def main(args):
+    # input parameters
+    data_dir = args.benchmark_data
+    participant_path = args.participant_data
+    output_dir = args.output
+    offline = args.offline
+
+    # Assuring the output directory does exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     # read participant metrics
-    participant_data = read_metrics_stubs(metrics_data_files)
-    generate_manifest(benchmark_data_dir, output_dir, participant_data)
+    participant_data = read_participant_data(participant_path)
+    if offline is None:
+        response = query_OEB_DB(DEFAULT_eventMark_id)
+        getOEBAggregations(response, data_dir)
+    generate_manifest(data_dir, output_dir, participant_data)
 
 
-def read_metrics_stubs(metrics_stubs):
-    participant_data = collections.defaultdict(list)
-    for result_file in metrics_stubs:
-        if fnmatch.fnmatch(result_file, "*.json") and os.path.isfile(result_file):
-            logger.debug('loading data in {}'.format(result_file))
-            with io.open(result_file, mode='r', encoding="utf-8") as f:
-                result = json.load(f)
-            if not isinstance(result, list):
-                result = [result]
-            for res in result:
-                participant_data[res['challenge_id']].append(res)
-            logger.debug('loaded data in {}'.format(result_file))
+##get existing aggregation datasets for that challenges
+def query_OEB_DB(bench_event_id):
+    json_query = {'query': """query AggregationQuery($bench_event_id: String) {
+    getChallenges(challengeFilters: {benchmarking_event_id: $bench_event_id}) {
+        _id
+        acronym
+        metrics_categories{
+          metrics {
+            metrics_id
+            orig_id
+          }
+        }
+        datasets(datasetFilters: {type: "aggregation"}) {
+                _id
+                _schema
+                orig_id
+                community_ids
+                challenge_ids
+                datalink {
+                    inline_data
+                }
+        }
+    }
+}""", 'variables': {'bench_event_id': bench_event_id}}
+    try:
+        url = DEFAULT_OEB_API
+        # get challenges and input datasets for provided benchmarking event
+        r = requests.post(url=url, json=json_query, headers={'Content-Type': 'application/json'})
+        response = r.json()
+        data = response.get("data")
+        if data is None:
+            logging.fatal("For {} got response error from graphql query: {}".format(bench_event_id, r.text))
+            sys.exit(6)
+        if len(data["getChallenges"]) == 0:
+            logging.fatal(
+                "No challenges associated to benchmarking event " + bench_event_id + " in OEB. Please contact OpenEBench support for information about how to open a new challenge")
+            sys.exit()
+        else:
+            return data.get('getChallenges')
+    except Exception as e:
+
+        logging.exception(e)
+
+
+# function to populate bench_dir with existing aggregations
+def getOEBAggregations(response, output_dir):
+    for challenge in response:
+
+        challenge['datasets'][0]['datalink']["inline_data"] = json.loads(
+            challenge['datasets'][0]["datalink"]["inline_data"])
+
+        for metrics in challenge['metrics_categories'][0]['metrics']:
+            if metrics['metrics_id'] == challenge['datasets'][0]['datalink']["inline_data"]["visualization"]["x_axis"]:
+                challenge['datasets'][0]['datalink']["inline_data"]["visualization"]["x_axis"] = \
+                metrics['orig_id'].split(":")[-1]
+            elif metrics['metrics_id'] == challenge['datasets'][0]['datalink']["inline_data"]["visualization"][
+                "y_axis"]:
+                challenge['datasets'][0]['datalink']["inline_data"]["visualization"]["y_axis"] = \
+                metrics['orig_id'].split(":")[-1]
+
+        # replace tool_id for participant_id (for the visualitzation)
+        for i in challenge['datasets'][0]['datalink']['inline_data']['challenge_participants']:
+            i["participant_id"] = i.pop("tool_id")
+
+        new_aggregation = {"_id": challenge['datasets'][0]['_id'], "challenge_ids": [challenge['acronym']],
+            'datalink': challenge['datasets'][0]['datalink']}
+        with open(os.path.join(output_dir, challenge['acronym'] + ".json"), mode='w', encoding="utf-8") as f:
+            json.dump(new_aggregation, f, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+def read_participant_data(participant_path):
+    participant_data = {}
+
+    with open(participant_path, mode='r', encoding="utf-8") as f:
+        result = json.load(f)
+        for item in result:
+            participant_data.setdefault(item['challenge_id'], []).append(item)
+
     return participant_data
-
-
-def all_datafiles_for_challenge(data_dir, challenge):
-    def json_files_for_challenge(base, challenge):
-        for file in os.scandir(base):
-            if file.name.startswith(challenge) and file.name.endswith('.json'):
-                fnd = True
-                yield file
-
-    fnd = False
-    nested_dir = os.path.join(data_dir, challenge)
-    if os.path.isdir(nested_dir):
-        yield from json_files_for_challenge(nested_dir, challenge)
-    if not fnd:
-        yield from json_files_for_challenge(data_dir, challenge)
 
 
 def generate_manifest(data_dir, output_dir, participant_data):
     info = []
-    for challenge, metrics in participant_data.items():
-        added_challenge_to_manifest = False
-        for challenge_oeb_data in all_datafiles_for_challenge(data_dir, challenge):
-            logger.debug('loading ' + challenge_oeb_data.path)
-            participants = []
+
+    for cancer, metrics_file in participant_data.items():
+
+        cancer_dir = os.path.join(output_dir, cancer)
+        if not os.path.exists(cancer_dir):
+            os.makedirs(cancer_dir)
+        participants = []
+
+        cancer_oeb_data_dir = os.path.join(data_dir, cancer)
+        cancer_oeb_data = cancer_oeb_data_dir + ".json"
+
+        if os.path.isfile(cancer_oeb_data):
             # Transferring the public participants data
-            with io.open(challenge_oeb_data, mode='r', encoding="utf-8") as f:
-                aggregation_file = json.load(f)
-            # if the type of the metrics type is "barplot", then go out the loop
-            if metrics[0]['type'] == 'barplot':
-                add_data = {}
-                add_data['toolname'] = metrics[0]['participant_id']
-                add_data['mode'] = aggregation_file[0]['mode']
-                add_data['type'] = aggregation_file[0]['type']
-                add_data['metric_value'] = metrics[0]['metrics']['value']
-                aggregation_file.append(add_data)
-                # copy the updated aggregation file to output directory
-                per_challenge_output = os.path.join(output_dir, challenge)
-                if not os.path.exists(per_challenge_output):
-                    os.makedirs(per_challenge_output)
-                summary_file = os.path.join(per_challenge_output, challenge_oeb_data.name)
-                with open(summary_file, 'w') as f:
-                    json.dump(aggregation_file, f, sort_keys=True, indent=4, separators=(',', ': '))
-                print_bar_chart(outdir_dir=per_challenge_output, summary_file=summary_file, challenge=challenge)
-                continue
-            # get id for metrics in x and y axis
+            with open(cancer_oeb_data) as f:
+                aggregation_file = json.loads(f.read())
+
+            # get default id for metrics in x and y axis
             metric_X = aggregation_file["datalink"]["inline_data"]["visualization"]["x_axis"]
             metric_Y = aggregation_file["datalink"]["inline_data"]["visualization"]["y_axis"]
-
-            # add new participant data to aggregation file
-            new_participant_data = {}
-            for metrics_data in metrics:
-                participant_id = metrics_data["participant_id"]
-                if metrics_data["metrics"]["metric_id"] == metric_X:
-                    new_participant_data["metric_x"] = metrics_data["metrics"]["value"]
-                    new_participant_data["stderr_x"] = metrics_data["metrics"]["stderr"]
-                elif metrics_data["metrics"]["metric_id"] == metric_Y:
-                    new_participant_data["metric_y"] = metrics_data["metrics"]["value"]
-                    new_participant_data["stderr_y"] = metrics_data["metrics"]["stderr"]
-                if 'metric_x' in new_participant_data and 'metric_y' in new_participant_data:
-                    # copy the assessment files to output directory
-                    new_participant_data["participant_id"] = participant_id
-                    logger.debug("new participant_data: {}".format(new_participant_data))
-                    aggregation_file["datalink"]["inline_data"]["challenge_participants"].append(new_participant_data)
-                    new_participant_data = {}
-
-            # add the rest of participants to manifest
-            for name in aggregation_file["datalink"]["inline_data"]["challenge_participants"]:
-                participants.append(name["participant_id"])
-
-            # copy the updated aggregation file to output directory
-            per_challenge_output = os.path.join(output_dir, challenge)
-            if not os.path.exists(per_challenge_output):
-                os.makedirs(per_challenge_output)
-            summary_file = os.path.join(per_challenge_output, challenge_oeb_data.name)
-            with open(summary_file, 'w') as f:
-                json.dump(aggregation_file, f, sort_keys=True, indent=4, separators=(',', ': '))
-
-            # Let's draw the assessment charts!
-            print_chart(per_challenge_output, summary_file, challenge, "RAW")
-            # print_chart(per_challenge_output, summary_file, challenge, "SQR")
-            # print_chart(per_challenge_output, summary_file, challenge, "DIAG")
-
-            # generate manifest, only once per challenge, not per visualization variant
-            if not added_challenge_to_manifest:
-                obj = {
-                    "id": challenge,
-                    "participants": participants
-                }
-                info.append(obj)
-                added_challenge_to_manifest = True
-
-    with io.open(os.path.join(output_dir, "Manifest.json"), mode='w', encoding="utf-8") as f:
-        json.dump(info, f, sort_keys=True, indent=4, separators=(',', ': '))
-
-
-def pareto_frontier(Xs, Ys, maxX=True, maxY=True):
-    # Sort the list in either ascending or descending order of X
-    myList = sorted([[Xs[i], Ys[i]] for i, val in enumerate(Xs, 0)], reverse=maxX)
-    # Start the Pareto frontier with the first value in the sorted list
-    p_front = [myList[0]]
-    # Loop through the sorted list
-    for pair in myList[1:]:
-        if maxY:
-            if pair[1] >= p_front[-1][1]:  # Look for higher values of Y
-                p_front.append(pair)  # and add them to the Pareto frontier
         else:
-            if pair[1] <= p_front[-1][1]:  # look for lower values of Y
-                p_front.append(pair)  # and add them to the pareto frontier
-    # Turn resulting pairs back into a list of Xs and Ys
-    p_frontX = [pair[0] for pair in p_front]
-    p_frontY = [pair[1] for pair in p_front]
-    return p_frontX, p_frontY
+            challenge_participants = []
 
+            # get default id for metrics in x and y axis
+            metric_X = None
+            metric_Y = None
+            for metrics_data in metrics_file:
+                if metric_X is None:
+                    metric_X = metrics_data["metrics"]["metric_id"]
+                elif metric_Y is None:
+                    metric_Y = metrics_data["metrics"]["metric_id"]
+                else:
+                    break
 
-# funtion that gets quartiles for x and y values
-def plot_square_quartiles(x_values, means, tools, better, ax, percentile=50):
-    x_percentile, y_percentile = (np.nanpercentile(x_values, percentile), np.nanpercentile(means, percentile))
-    plt.axvline(x=x_percentile, linestyle='--', color='#0A58A2', linewidth=1.5)
-    plt.axhline(y=y_percentile, linestyle='--', color='#0A58A2', linewidth=1.5)
+            # Setting the defaults in case nothing was found
+            if metric_X is None:
+                metric_X = "TPR"
+            if metric_Y is None:
+                metric_Y = "precision"
 
-    # create a dictionary with tools and their corresponding quartile
-    tools_quartiles = {}
-    if better == "bottom-right":
+            aggregation_file = {"_id": "TCGA:{}_{}_Aggregation".format(DEFAULT_eventMark, cancer),
+                "challenge_ids": [cancer], "datalink": {
+                    "inline_data": {"challenge_participants": challenge_participants,
+                        "metrics": {"metric_x_id": METRICS['TPR'], "metric_y_id": METRICS['precision']},
+                        "visualization": {"type": "2D-plot", "x_axis": metric_X, "y_axis": metric_Y}}},
+                "type": "aggregation"}
 
-        # add quartile numbers to plot
-        plt.text(0.99, 0.15, '1', verticalalignment='bottom', horizontalalignment='right', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
-        plt.text(0.01, 0.15, '2', verticalalignment='bottom', horizontalalignment='left', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
-        plt.text(0.99, 0.85, '3', verticalalignment='top', horizontalalignment='right', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
-        plt.text(0.01, 0.85, '4', verticalalignment='top', horizontalalignment='left', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
+            # Get the info from the files in the directory
+            if os.path.isdir(cancer_oeb_data_dir):
+                print("Reading {}".format(cancer_oeb_data_dir))
+                for entry in os.scandir(cancer_oeb_data_dir):
+                    if entry.is_file() and entry.name.endswith(".json"):
+                        with open(entry.path, mode="r", encoding="utf-8") as ep:
+                            metrics_content = json.load(ep)
+                            if metrics_content.get("cancer_type") == cancer:
+                                challenge_participants.append(
+                                    {"metric_x": metrics_content["x"], "metric_y": metrics_content["y"],
+                                        "participant_id": metrics_content["toolname"]})
 
-        for i, val in enumerate(tools, 0):
-            if x_values[i] >= x_percentile and means[i] <= y_percentile:
-                tools_quartiles[tools[i]] = 1
-            elif x_values[i] >= x_percentile and means[i] > y_percentile:
-                tools_quartiles[tools[i]] = 3
-            elif x_values[i] < x_percentile and means[i] > y_percentile:
-                tools_quartiles[tools[i]] = 4
-            elif x_values[i] < x_percentile and means[i] <= y_percentile:
-                tools_quartiles[tools[i]] = 2
+        # add new participant data to aggregation file
+        new_participant_data = {}
+        participant_id = '(unknown)'
+        for metrics_data in metrics_file:
+            participant_id = metrics_data["participant_id"]
+            if metrics_data["metrics"]["metric_id"] == metric_X:
+                new_participant_data["metric_x"] = metrics_data["metrics"]["value"]
+            elif metrics_data["metrics"]["metric_id"] == metric_Y:
+                new_participant_data["metric_y"] = metrics_data["metrics"]["value"]
 
-    elif better == "top-right":
+        new_participant_data["participant_id"] = participant_id
+        aggregation_file["datalink"]["inline_data"]["challenge_participants"].append(new_participant_data)
+        metrics = {"metric_x_id": METRICS['TPR'], "metric_y_id": METRICS['precision']}
 
-        # add quartile numbers to plot
-        plt.text(0.99, 0.85, '1', verticalalignment='top', horizontalalignment='right', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
-        plt.text(0.01, 0.85, '2', verticalalignment='top', horizontalalignment='left', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
-        plt.text(0.99, 0.15, '3', verticalalignment='bottom', horizontalalignment='right', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
-        plt.text(0.01, 0.15, '4', verticalalignment='bottom', horizontalalignment='left', transform=ax.transAxes,
-                 fontsize=25, alpha=0.2)
+        aggregation_file["datalink"]["inline_data"]["metrics"] = metrics
 
-        for i, val in enumerate(tools, 0):
-            if x_values[i] >= x_percentile and means[i] < y_percentile:
-                tools_quartiles[tools[i]] = 3
-            elif x_values[i] >= x_percentile and means[i] >= y_percentile:
-                tools_quartiles[tools[i]] = 1
-            elif x_values[i] < x_percentile and means[i] >= y_percentile:
-                tools_quartiles[tools[i]] = 2
-            elif x_values[i] < x_percentile and means[i] < y_percentile:
-                tools_quartiles[tools[i]] = 4
+        # add the rest of participants to manifest
+        for name in aggregation_file["datalink"]["inline_data"]["challenge_participants"]:
+            participants.append(name["participant_id"])
 
-    return (tools_quartiles)
+        # copy the updated aggregation file to output directory
+        summary_dir = os.path.join(cancer_dir, cancer + ".json")
+        with open(summary_dir, 'w') as f:
+            json.dump(aggregation_file, f, sort_keys=True, indent=4, separators=(',', ': '))
 
+        # Let's draw the assessment charts!
+        assessment_chart.print_chart(cancer_dir, summary_dir, cancer, "RAW")
+        assessment_chart.print_chart(cancer_dir, summary_dir, cancer, "SQR")
+        assessment_chart.print_chart(cancer_dir, summary_dir, cancer, "DIAG")
 
-# function to normalize the x and y axis to 0-1 range
-def normalize_data(x_values, means):
-    maxX = max(x_values)
-    minX = min(x_values)
-    maxY = max(means)
-    minY = min(means)
-    # maxX = ax.get_xlim()[1]
-    # minX = ax.get_xlim()[0]
-    # maxY = ax.get_ylim()[1]
-    # minY = ax.get_ylim()[0]
-    # x_norm = [(x - minX) / (maxX - minX) for x in x_values]
-    # means_norm = [(y - minY) / (maxY - minY) for y in means]
-    x_norm = [x / maxX for x in x_values]
-    means_norm = [y / maxY for y in means]
-    return x_norm, means_norm
+        # generate manifest
+        obj = {"id": cancer, "participants": participants,
+            'timestamp': datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()}
 
+        info.append(obj)
 
-# funtion that plots a diagonal line separating the values by the given quartile
-def draw_diagonal_line(scores_and_values, quartile, better, max_x, max_y):
-    for i, val in enumerate(scores_and_values, 0):
-        # find out which are the two points that contain the percentile value
-        if scores_and_values[i][0] <= quartile:
-            target = [(scores_and_values[i - 1][1], scores_and_values[i - 1][2]),
-                      (scores_and_values[i][1], scores_and_values[i][2])]
-            break
-    # get the the mid point between the two, where the quartile line will pass
-    half_point = (target[0][0] + target[1][0]) / 2, (target[0][1] + target[1][1]) / 2
-    # plt.plot(half_point[0], half_point[1], '*')
-    # draw the line depending on which is the optimal corner
-    if better == "bottom-right":
-        x_coords = (half_point[0] - max_x, half_point[0] + max_x)
-        y_coords = (half_point[1] - max_y, half_point[1] + max_y)
-    elif better == "top-right":
-        x_coords = (half_point[0] + max_x, half_point[0] - max_x)
-        y_coords = (half_point[1] - max_y, half_point[1] + max_y)
-
-    plt.plot(x_coords, y_coords, linestyle='--', color='#0A58A2', linewidth=1.5)
-
-
-# funtion that splits the analysed tools into four quartiles, according to the asigned score
-def get_quartile_points(scores_and_values, first_quartile, second_quartile, third_quartile):
-    tools_quartiles = {}
-    for i, val in enumerate(scores_and_values, 0):
-        if scores_and_values[i][0] > third_quartile:
-            tools_quartiles[scores_and_values[i][3]] = 1
-        elif second_quartile < scores_and_values[i][0] <= third_quartile:
-            tools_quartiles[scores_and_values[i][3]] = 2
-        elif first_quartile < scores_and_values[i][0] <= second_quartile:
-            tools_quartiles[scores_and_values[i][3]] = 3
-        elif scores_and_values[i][0] <= first_quartile:
-            tools_quartiles[scores_and_values[i][3]] = 4
-    return (tools_quartiles)
-
-
-# funtion that separate the points through diagonal quartiles based on the distance to the 'best corner'
-def plot_diagonal_quartiles(x_values, means, tools, better):
-    # get distance to lowest score corner
-
-    # normalize data to 0-1 range
-    x_norm, means_norm = normalize_data(x_values, means)
-    max_x = max(x_values)
-    max_y = max(means)
-    # compute the scores for each of the tool. based on their distance to the x and y axis
-    scores = []
-    for i, val in enumerate(x_norm, 0):
-        if better == "bottom-right":
-            scores.append(x_norm[i] + (1 - means_norm[i]))
-        elif better == "top-right":
-            scores.append(x_norm[i] + means_norm[i])
-
-    # add plot annotation boxes with info about scores and tool names
-    for counter, scr in enumerate(scores):
-        plt.annotate(
-            tools[counter] + "\n" +
-            # str(round(x_norm[counter], 6)) + " * " + str(round(1 - means_norm[counter], 6)) + " = " + str(round(scr, 8)),
-            "score = " + str(round(scr, 3)),
-            xy=(x_values[counter], means[counter]), xytext=(0, 20),
-            textcoords='offset points', ha='right', va='bottom',
-            bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.15),
-            size=7,
-            arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
-
-    # region sort the list in descending order
-    scores_and_values = sorted([[scores[i], x_values[i], means[i], tools[i]] for i, val in enumerate(scores, 0)],
-                               reverse=True)
-    scores = sorted(scores, reverse=True)
-    # print (scores_and_values)
-    # print (scores)
-    # endregion
-    first_quartile, second_quartile, third_quartile = (
-        np.nanpercentile(scores, 25), np.nanpercentile(scores, 50), np.nanpercentile(scores, 75))
-    # print (first_quartile, second_quartile, third_quartile)
-    draw_diagonal_line(scores_and_values, first_quartile, better, max_x, max_y)
-    draw_diagonal_line(scores_and_values, second_quartile, better, max_x, max_y)
-    draw_diagonal_line(scores_and_values, third_quartile, better, max_x, max_y)
-
-    # split in quartiles
-    tools_quartiles = get_quartile_points(scores_and_values, first_quartile, second_quartile, third_quartile)
-    return (tools_quartiles)
-
-
-# function that prints a table with the list of tools and the corresponding quartiles
-def print_quartiles_table(tools_quartiles):
-    row_names = tools_quartiles.keys()
-    quartiles_1 = tools_quartiles.values()
-
-    colnames = ["TOOL", "Quartile"]
-    celltxt = zip(row_names, quartiles_1)
-    df = pandas.DataFrame(celltxt)
-    vals = df.values
-
-    # set cell colors depending on the quartile
-    # green color scale
-    colors = df.applymap(lambda x: '#238b45' if x == 1 else '#74c476' if x == 2 else '#bae4b3' if x == 3
-    else '#edf8e9' if x == 4 else '#ffffff')
-
-    colors = colors.values
-
-    the_table = plt.table(cellText=vals,
-                          colLabels=colnames,
-                          cellLoc='center',
-                          loc='right',
-                          bbox=[1.1, 0.15, 0.5, 0.8],
-                          colWidths=[1.2, 0.5],
-                          cellColours=colors,
-                          colColours=['#ffffff'] * 2)
-    the_table.auto_set_font_size(False)
-    the_table.set_fontsize(12)
-    plt.subplots_adjust(right=0.65, bottom=0.2)
-
-
-def print_bar_chart(outdir_dir, summary_file, challenge):
-    # copy the folder Scientific_Barplot, and move it to the outdir_dir
-    if not os.path.exists(outdir_dir + "/Scientific_Barplot"):
-        shutil.copytree(os.path.dirname(os.path.realpath(__file__)) + "/Scientific_Barplot", outdir_dir + "/Scientific_Barplot")
-    with io.open(summary_file, mode='r', encoding="utf-8") as f:
-        summary = json.load(f)
-    # edit the file Scientific_Barplot/index.html
-    with io.open(outdir_dir + "/Scientific_Barplot/index.html", mode='r', encoding="utf-8") as f:
-        html = f.read()
-    # change strings between <title> and </title>
-    import re
-    html = re.sub(r'<title>.*</title>', '<title>' + challenge + '</title>', html)
-
-    summary_str = str(json.dumps(summary))
-    data_id = "OEBD00300000XX"
-    body_data = f'<div style= "float:left" data-id=\"{data_id}\" class="benchmarkingChart_bars" data-data=\'{summary_str}\' data-metric-name=\"{challenge}\"></div>'
-    # change everything between <body> and </body>
-    html = re.sub(r'<body>\n.*', '<body>\n    ' + body_data, html)
-
-    with io.open(outdir_dir + "/Scientific_Barplot/index.html", mode='w', encoding="utf-8") as f:
-        f.write(html)
-
-
-
-def print_chart(outdir_dir, summary_file, challenge, classification_type):
-    tools = []
-    x_values = []
-    y_values = []
-    x_err = []
-    y_err = []
-    with io.open(summary_file, mode='r', encoding="utf-8") as f:
-        aggregation_file = json.load(f)
-        x_axis = aggregation_file['datalink']['inline_data']['visualization']['x_axis']
-        y_axis = aggregation_file['datalink']['inline_data']['visualization']['y_axis']
-        for participant_data in aggregation_file["datalink"]["inline_data"]["challenge_participants"]:
-            tools.append(participant_data['participant_id'])
-            x_values.append(participant_data['metric_x'])
-            y_values.append(participant_data['metric_y'])
-            x_err.append(participant_data.get('stderr_x', 0))
-            y_err.append(participant_data.get('stderr_y', 0))
-    n = len(tools)
-    sort_key = sorted([i for i in range(n)], key=lambda i: tools[i])
-    tools = [tools[sort_key[i]] for i in range(n)]
-    x_values = [x_values[sort_key[i]] for i in range(n)]
-    y_values = [y_values[sort_key[i]] for i in range(n)]
-    x_err = [x_err[sort_key[i]] for i in range(n)]
-    y_err = [y_err[sort_key[i]] for i in range(n)]
-
-    ax = plt.subplot()
-    for i, val in enumerate(tools, 0):
-        markers = [".", "o", "v", "^", "<", ">", "1", "2", "3", "4", "8", "s", "p", "P", "*", "h", "H", "+",
-                   "x", "X",
-                   "D",
-                   "d", "|", "_", ","]
-        colors = ['#5b2a49', '#a91310', '#9693b0', '#e7afd7', '#fb7f6a', '#0566e5', '#00bdc8', '#cf4119', '#8b123f',
-                  '#c43b3b',
-                  '#b35ccc', '#dbf6a6', '#c0b596', '#516e85', '#1343c3', '#7b88be', '#000000', '#808080', '#DCDCDC',
-                  '#14ff14',
-                  "#b9b631", "#37f9a2", "#bac8b0", "#72b770", "#a0fc50", "#0f66fe", "#867cce", "#808ca3", "#fee63d", ]
-        ax.errorbar(x_values[i], y_values[i], xerr=x_err[i], yerr=y_err[i], linestyle='None', marker=markers[i],
-                    markersize='15', markerfacecolor=colors[i], markeredgecolor=colors[i], capsize=6,
-                    ecolor=colors[i], label=tools[i])
-
-    # change plot style
-    # set plot title
-
-    plt.title("LRGASP challenge 3 benchmarking - " + challenge + " ", fontsize=18, fontweight='bold')
-    # set plot title depending on the analysed tool
-
-    ax.set_xlabel(x_axis, fontsize=12)
-    ax.set_ylabel(y_axis, fontsize=12)
-
-    # Shrink current axis's height  on the bottom
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0 + box.height * 0.25,
-                     box.width, box.height * 0.75])
-
-    # Put a legend below current axis
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), markerscale=0.7,
-               fancybox=True, shadow=True, ncol=5, prop={'size': 12})
-
-    # set the axis limits
-    x_lims = ax.get_xlim()
-    plt.xlim(x_lims)
-    y_lims = ax.get_ylim()
-    plt.ylim(y_lims)
-    if x_lims[0] >= 1000:
-        ax.get_xaxis().set_major_formatter(plt.FuncFormatter(lambda x, loc: "{:,}".format(int(x))))
-    if y_lims[0] >= 1000:
-        ax.get_yaxis().set_major_formatter(plt.FuncFormatter(lambda y, loc: "{:,}".format(int(y))))
-
-    # set parameters for optimization
-    max_x = True
-    if y_axis in ('RF_DISTANCE', 'FRAC_INCORRECT_TREES'):
-        better = "bottom-right"
-        max_y = False
-    else:
-        better = "top-right"
-        max_y = True
-
-    # get pareto frontier and plot
-    p_frontX, p_frontY = pareto_frontier(x_values, y_values, maxX=max_x, maxY=max_y)
-    plt.plot(p_frontX, p_frontY, linestyle='--', color='grey', linewidth=1)
-    # append edges to pareto frontier
-    if better == 'bottom-right':
-        left_edge = [[x_lims[0], p_frontX[-1]], [p_frontY[-1], p_frontY[-1]]]
-        right_edge = [[p_frontX[0], p_frontX[0]], [p_frontY[0], y_lims[1]]]
-        plt.plot(left_edge[0], left_edge[1], right_edge[0], right_edge[1], linestyle='--', color='red',
-                 linewidth=1)
-    elif better == 'top-right':
-        left_edge = [[x_lims[0], p_frontX[-1]], [p_frontY[-1], p_frontY[-1]]]
-        right_edge = [[p_frontX[0], p_frontX[0]], [p_frontY[0], y_lims[0]]]
-        plt.plot(left_edge[0], left_edge[1], right_edge[0], right_edge[1], linestyle='--', color='red',
-                 linewidth=1)
-
-    # add 'better' annotation and quartile numbers to plot
-    if better == 'bottom-right':
-        plt.annotate('better', xy=(0.98, 0.04), xycoords='axes fraction',
-                     xytext=(-30, 30), textcoords='offset points',
-                     ha="right", va="bottom",
-                     arrowprops=dict(facecolor='black', shrink=0.05, width=0.9))
-
-    elif better == 'top-right':
-        plt.annotate('better', xy=(0.98, 0.95), xycoords='axes fraction',
-                     xytext=(-30, -30), textcoords='offset points',
-                     ha="right", va="top",
-                     arrowprops=dict(facecolor='black', shrink=0.05, width=0.9))
-
-    # add chart grid
-    plt.grid(b=None, which='major', axis='both', linewidth=0.5)
-
-    if classification_type == "SQR":
-        tools_quartiles = plot_square_quartiles(x_values, y_values, tools, better, ax)
-        print_quartiles_table(tools_quartiles)
-
-    elif classification_type == "DIAG":
-        tools_quartiles = plot_diagonal_quartiles(x_values, y_values, tools, better)
-        print_quartiles_table(tools_quartiles)
-
-    outname = (challenge + "_benchmark_" + classification_type + "-" +
-               x_axis + "-" + y_axis + ".pdf").replace(' ', '_')
-    outpath = os.path.join(outdir_dir, outname)
-    fig = plt.gcf()
-    fig.set_size_inches(18.5, 10.5)
-    fig.savefig(outpath, dpi=100)
-
-    plt.close("all")
+    with open(os.path.join(output_dir, "Manifest.json"), mode='w', encoding="utf-8") as f:
+        json.dump(info, f, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("-m", "--metrics_data", required=True,
-                        help="dir where the data for the assessment metrics are stored")
-    parser.add_argument("-b", "--benchmark_data", required=True,
-                        help="dir where the data for the benchmark are stored", )
-    parser.add_argument("-o", "--output", required=True,
-                        help="output directory where the manifest, summary data and figures are written", )
-    parser.add_argument("-d", "--debug", action='store_true', help="Turn on debugging output")
+    parser.add_argument("-p", "--participant_data", help="path where the data for the participant is stored",
+                        required=True)
+    parser.add_argument("-b", "--benchmark_data", help="dir where the data for the benchmark will be or is stored",
+                        required=True)
+    parser.add_argument("-o", "--output",
+                        help="output directory where the manifest and output JSON files will be written", required=True)
+    parser.add_argument("--offline",
+                        help="offline mode; existing benchmarking datasets will be read from the benchmark_data",
+                        required=False, type=bool)
     args = parser.parse_args()
-    level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(level=level)
 
-    list_data = os.listdir(args.metrics_data)
-    args.metrics_data = [os.path.join(args.metrics_data, file) for file in list_data]
-
-    main(args.metrics_data, args.benchmark_data, args.output)
+    main(args)
