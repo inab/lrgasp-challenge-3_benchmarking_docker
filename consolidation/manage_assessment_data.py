@@ -10,9 +10,9 @@ from argparse import ArgumentParser
 import datetime
 from assessment_chart import assessment_chart
 
-DEFAULT_eventMark = '2018-04-05'
+DEFAULT_eventMark = '2022-12-30'
 DEFAULT_OEB_API = "https://dev-openebench.bsc.es/api/scientific/graphql"
-DEFAULT_eventMark_id = "OEBE0010000000"
+DEFAULT_eventMark_id = "OEBE0010000010"
 METRICS = {"precision": "OEBM0010000001", "TPR": "OEBM0010000002"}
 
 
@@ -156,7 +156,7 @@ def generate_manifest(data_dir, output_dir, participant_data):
             if metric_Y is None:
                 metric_Y = "precision"
 
-            aggregation_file = {"_id": "TCGA:{}_{}_Aggregation".format(DEFAULT_eventMark, cancer),
+            aggregation_file = {"_id": "LRGASP:{}_{}_Aggregation".format(DEFAULT_eventMark, cancer),
                 "challenge_ids": [cancer], "datalink": {
                     "inline_data": {"challenge_participants": challenge_participants,
                         "metrics": {"metric_x_id": METRICS['TPR'], "metric_y_id": METRICS['precision']},
@@ -224,7 +224,7 @@ if __name__ == '__main__':
     parser.add_argument("-o", "--output",
                         help="output directory where the manifest and output JSON files will be written", required=True)
     parser.add_argument("--offline",
-                        help="offline mode; existing benchmarking datasets will be read from the benchmark_data",
+                        help="offline mode; existing benchmarking datasets will be read from the benchmark_data", default=True,
                         required=False, type=bool)
     args = parser.parse_args()
 
