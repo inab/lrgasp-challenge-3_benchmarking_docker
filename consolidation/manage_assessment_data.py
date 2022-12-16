@@ -118,19 +118,19 @@ def read_participant_data(participant_path):
 def generate_manifest(data_dir, output_dir, participant_data):
     info = []
 
-    for cancer, metrics_file in participant_data.items():
+    for lrgasp, metrics_file in participant_data.items():
 
-        cancer_dir = os.path.join(output_dir, cancer)
-        if not os.path.exists(cancer_dir):
-            os.makedirs(cancer_dir)
+        lrgasp_dir = os.path.join(output_dir, lrgasp)
+        if not os.path.exists(lrgasp_dir):
+            os.makedirs(lrgasp_dir)
         participants = []
 
-        cancer_oeb_data_dir = os.path.join(data_dir, cancer)
-        cancer_oeb_data = cancer_oeb_data_dir + ".json"
+        lrgasp_oeb_data_dir = os.path.join(data_dir, lrgasp)
+        lrgasp_oeb_data = lrgasp_oeb_data_dir + ".json"
 
-        if os.path.isfile(cancer_oeb_data):
+        if os.path.isfile(lrgasp_oeb_data):
             # Transferring the public participants data
-            with open(cancer_oeb_data) as f:
+            with open(lrgasp_oeb_data) as f:
                 aggregation_file = json.loads(f.read())
 
             # get default id for metrics in x and y axis
@@ -156,21 +156,21 @@ def generate_manifest(data_dir, output_dir, participant_data):
             if metric_Y is None:
                 metric_Y = "precision"
 
-            aggregation_file = {"_id": "LRGASP:{}_{}_Aggregation".format(DEFAULT_eventMark, cancer),
-                "challenge_ids": [cancer], "datalink": {
+            aggregation_file = {"_id": "LRGASP:{}_{}_Aggregation".format(DEFAULT_eventMark, lrgasp),
+                "challenge_ids": [lrgasp], "datalink": {
                     "inline_data": {"challenge_participants": challenge_participants,
                         "metrics": {"metric_x_id": METRICS['TPR'], "metric_y_id": METRICS['precision']},
                         "visualization": {"type": "2D-plot", "x_axis": metric_X, "y_axis": metric_Y}}},
                 "type": "aggregation"}
 
             # Get the info from the files in the directory
-            if os.path.isdir(cancer_oeb_data_dir):
-                print("Reading {}".format(cancer_oeb_data_dir))
-                for entry in os.scandir(cancer_oeb_data_dir):
+            if os.path.isdir(lrgasp_oeb_data_dir):
+                print("Reading {}".format(lrgasp_oeb_data_dir))
+                for entry in os.scandir(lrgasp_oeb_data_dir):
                     if entry.is_file() and entry.name.endswith(".json"):
                         with open(entry.path, mode="r", encoding="utf-8") as ep:
                             metrics_content = json.load(ep)
-                            if metrics_content.get("cancer_type") == cancer:
+                            if metrics_content.get("challenge") == lrgasp:
                                 challenge_participants.append(
                                     {"metric_x": metrics_content["x"], "metric_y": metrics_content["y"],
                                         "participant_id": metrics_content["toolname"]})
@@ -196,17 +196,17 @@ def generate_manifest(data_dir, output_dir, participant_data):
             participants.append(name["participant_id"])
 
         # copy the updated aggregation file to output directory
-        summary_dir = os.path.join(cancer_dir, cancer + ".json")
+        summary_dir = os.path.join(lrgasp_dir, lrgasp + ".json")
         with open(summary_dir, 'w') as f:
             json.dump(aggregation_file, f, sort_keys=True, indent=4, separators=(',', ': '))
 
         # Let's draw the assessment charts!
-        assessment_chart.print_chart(cancer_dir, summary_dir, cancer, "RAW")
-        assessment_chart.print_chart(cancer_dir, summary_dir, cancer, "SQR")
-        assessment_chart.print_chart(cancer_dir, summary_dir, cancer, "DIAG")
+        assessment_chart.print_chart(lrgasp_dir, summary_dir, lrgasp, "RAW")
+        assessment_chart.print_chart(lrgasp_dir, summary_dir, lrgasp, "SQR")
+        assessment_chart.print_chart(lrgasp_dir, summary_dir, lrgasp, "DIAG")
 
         # generate manifest
-        obj = {"id": cancer, "participants": participants,
+        obj = {"id": lrgasp, "participants": participants,
             'timestamp': datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()}
 
         info.append(obj)

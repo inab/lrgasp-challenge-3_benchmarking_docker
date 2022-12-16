@@ -213,7 +213,7 @@ def print_quartiles_table(tools_quartiles):
 
 
 
-def print_chart(cancer_dir, summary_dir, cancer_type, classification_type):
+def print_chart(lrgasp_dir, summary_dir, challenge, classification_type):
 
     tools = []
     x_values = []
@@ -244,7 +244,7 @@ def print_chart(cancer_dir, summary_dir, cancer_type, classification_type):
     # change plot style
     # set plot title
 
-    plt.title("Cancer Driver Genes prediction benchmarking - " + cancer_type, fontsize=18, fontweight='bold')
+    plt.title("LRGASP-" + challenge, fontsize=18, fontweight='bold')
 
     # set plot title depending on the analysed tool
 
@@ -316,7 +316,7 @@ def print_chart(cancer_dir, summary_dir, cancer_type, classification_type):
         tools_quartiles = plot_diagonal_quartiles(x_values, y_values, tools, better)
         print_quartiles_table(tools_quartiles)
 
-    outname = os.path.join(cancer_dir,cancer_type + "_benchmark_" + classification_type + ".svg")
+    outname = os.path.join(lrgasp_dir, challenge + "_benchmark_" + classification_type + ".svg")
     fig = plt.gcf()
     fig.set_size_inches(18.5, 10.5)
     fig.savefig(outname, dpi=100)
