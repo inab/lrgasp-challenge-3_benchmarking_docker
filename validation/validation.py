@@ -59,15 +59,12 @@ def validate_input_data(input, public_ref_dir, community_id, challenges_ids, par
 
     VALID_CHALLENGES_IDS = ["mouse_num_iso",
                             "mouse_sirvs",
-                            "mouse_full_Illumina_support_vs_coding_transcripts",
-                            "mouse_non-canonical_SJ_vs_SJ_SR_coverage",
-                            "mouse_%_mapping_to_genome",
-                            "mouse_%_multi-exonic_isoforms",
-                            "mouse_%_full_illumina_support",
-                            "mouse_num_busco_gene_compl-dupl",
-                            "mouse_num_busco_gene_compl-single",
-                            "mouse_num_busco_gene_fragment",
-                            "mouse_num_busco_gene_missing"]
+                            "mouse_%_full_Illumina_support_vs_%_coding_transcripts",
+                            "mouse_%_mapping_to_genome_vs_%_full_Illumina_support",
+                            "mouse_num_busco_gene_compl-dupl_vs_num_busco_gene_compl-single",
+                            "mouse_num_busco_gene_fragment_vs_num_busco_gene_missing",
+                            "mouse_%_non-canonical_SJ_vs_%_SJ_SR_coverage"
+                            ]
 
     # validate challenges ids
     challenges_ids_split = challenges_ids.split(" ")
