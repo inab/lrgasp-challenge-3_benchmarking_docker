@@ -2518,8 +2518,8 @@ def main():
     parser.add_argument('-e', '--expression', help='\t\tExpression matrix (supported: Kallisto tsv)', required=False)
     parser.add_argument('-x', '--gmap_index',
                         help='\t\tPath and prefix of the reference index created by gmap_build. Mandatory if using GMAP unless -g option is specified.')
-    parser.add_argument('-t', '--cpus', default=15, type=int,
-                        help='\t\tNumber of threads used during alignment by aligners. (default: 15)')
+    parser.add_argument('-t', '--cpus', default=5, type=int,
+                        help='\t\tNumber of threads used during alignment by aligners. (default: 5)')
     parser.add_argument('-n', '--chunks', default=1, type=int,
                         help='\t\tNumber of chunks to split SQANTI3 analysis in for speed up (default: 1).')
 

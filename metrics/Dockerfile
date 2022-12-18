@@ -16,5 +16,3 @@ ENV PYTHONPATH "${PYTHONPATH}:/app/cDNA_Cupcake/"
 
 RUN apt-get install libcurl4 libcurl4-openssl-dev -y
 
-# The code to run when container is started:
-COPY . /app
