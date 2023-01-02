@@ -11,7 +11,7 @@ set -e
 if [ $# -gt 0 ]; then
 	tag_id="$1"
 
-	for docker_name in validation metrics consolidation ; do
+	for docker_name in lrgasp_event2_validation lrgasp_event2_metrics lrgasp_event2_consolidation; do
 		echo "Building ${docker_name}:${tag_id}"
 		docker build -t "$docker_name":"$tag_id" "$docker_name"
 	done
