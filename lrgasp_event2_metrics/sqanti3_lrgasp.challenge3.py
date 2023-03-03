@@ -480,7 +480,7 @@ def run_BUSCO(correctedFASTA, cpus, output_dir, ref_dir):
     if os.path.exists(summary_file):
         print("WARNING: Using previously calculated BUSCO output:  " + str(summary_file))
     else:
-        subprocess.call(['busco', '-i', str(correctedFASTA),
+        subprocess.call(['busco', '-i', str(correctedFASTA), '-q',
                          '-l', ref_dir + "/busco_data/lineages/eutheria_odb10/",
                          '--out_path', output_dir,
                          '--offline',
@@ -2124,6 +2124,7 @@ def run(args):
     community = args.com
     # split the challenges_ids based on space
     challenges_ids = args.challenges_ids.split(" ")
+
     for challenge in challenges_ids:
         # if challenge contains "num_iso" then save the number of isoforms as assessment_TPR and mapping isoforms as assessment_precision
         if "num_iso" in challenge:
@@ -2204,25 +2205,18 @@ def run(args):
 
             ALL_ASSESSMENTS.extend([assessment_busco_gene_fragment, assessment_busco_gene_missing])
 
-    out_path = args.out_path
-    # Assuring the output path does exist
-    if not os.path.exists(os.path.dirname(out_path)):
-        try:
-            os.makedirs(os.path.dirname(out_path))
-            with open(out_path, mode="a"):
-                pass
-        except OSError as exc:
-            print("OS error: {0}".format(exc) + "\nCould not create output path: " + out_path)
 
     # once all assessments have been added, print to json file
-    with open(out_path, mode='w', encoding="utf-8") as f:
+    with open(args.out_path, mode='w', encoding="utf-8") as f:
         jdata = json.dumps(ALL_ASSESSMENTS, sort_keys=True, indent=4, separators=(',', ': '))
         f.write(jdata)
 
-
-
     os.remove(outputClassPath + "_tmp")
     os.remove(outputJuncPath + "_tmp")
+
+    # Remove the temp folder
+    if not args.keep_temp:
+        shutil.rmtree(args.dir)
 
     print("SQANTI3 complete in {0} sec.".format(stop3 - start3), file=sys.stderr)
 
@@ -2559,6 +2553,8 @@ def main():
                         help='\t\tEntry JSON file that is requiered for uploading the submission. More info here: https://lrgasp.github.io/lrgasp-submissions/docs/metadata.html ',
                         required=False)
 
+    parser.add_argument('--keep_temp', help='\t\tReference data directory', required=False, default=False)
+
     args = parser.parse_args()
 
     if not args.challenges_ids:
@@ -2610,8 +2606,20 @@ def main():
         args.output = os.path.splitext(os.path.basename(args.isoforms))[0]
 
 
+    # Assuring the output path does exist
+    if not os.path.exists(os.path.dirname(args.out_path)):
+        try:
+            os.makedirs(os.path.dirname(args.out_path))
+            with open(args.out_path, mode="a"):
+                pass
+        except OSError as exc:
+            print("OS error: {0}".format(exc) + "\nCould not create output path: " + args.out_path)
+
     if args.dir is None:
-        args.dir = os.getcwd()
+        # Create a temporary directory to store all the output files\
+        args.dir = os.path.dirname(args.out_path) + '/' + "tmp/"
+        if not os.path.exists(args.dir):
+            os.makedirs(args.dir)
     else:
         args.dir = os.path.abspath(args.dir)
         if os.path.isdir(args.dir):

@@ -3,7 +3,7 @@
 from __future__ import division
 import requests
 import json
-import os
+import os, io
 import logging
 import sys
 from argparse import ArgumentParser
@@ -32,6 +32,25 @@ def main(args):
         response = query_OEB_DB(DEFAULT_eventMark_id)
         getOEBAggregations(response, data_dir)
     generate_manifest(data_dir, output_dir, participant_data)
+
+
+    with open(os.path.join(output_dir, "Manifest.json"), mode='r', encoding="utf-8") as f:
+        manifest_data = json.load(f)
+
+    with open(participant_path, mode='r', encoding="utf-8") as f:
+        participant_data = json.load(f)
+
+    # combine participant data with manifest data
+    for manifest in manifest_data:
+        participant_data.append(manifest)
+
+    # add manifest to participant data
+    with open(participant_path, mode='w', encoding="utf-8") as f:
+        json.dump(participant_data, f, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+
+
 
 
 ##get existing aggregation datasets for that challenges
@@ -106,7 +125,6 @@ def getOEBAggregations(response, output_dir):
 
 def read_participant_data(participant_path):
     participant_data = {}
-
     with open(participant_path, mode='r', encoding="utf-8") as f:
         result = json.load(f)
         for item in result:
@@ -114,105 +132,81 @@ def read_participant_data(participant_path):
 
     return participant_data
 
+def all_datafiles_for_challenge(data_dir, challenge):
+    def json_files_for_challenge(base, challenge):
+        for file in os.scandir(base):
+            if file.name.startswith(challenge) and file.name.endswith('.json'):
+                fnd = True
+                yield file
+
+    fnd = False
+    nested_dir = os.path.join(data_dir, challenge)
+    if os.path.isdir(nested_dir):
+        yield from json_files_for_challenge(nested_dir, challenge)
+    if not fnd:
+        yield from json_files_for_challenge(data_dir, challenge)
 
 def generate_manifest(data_dir, output_dir, participant_data):
     info = []
-
-    for lrgasp, metrics_file in participant_data.items():
-
-        lrgasp_dir = os.path.join(output_dir, lrgasp)
-        if not os.path.exists(lrgasp_dir):
-            os.makedirs(lrgasp_dir)
-        participants = []
-
-        lrgasp_oeb_data_dir = os.path.join(data_dir, lrgasp)
-        lrgasp_oeb_data = lrgasp_oeb_data_dir + ".json"
-
-        if os.path.isfile(lrgasp_oeb_data):
+    for challenge, metrics in participant_data.items():
+        added_challenge_to_manifest = False
+        for challenge_oeb_data in all_datafiles_for_challenge(data_dir, challenge):
+            print('loading ' + challenge_oeb_data.path)
+            participants = []
             # Transferring the public participants data
-            with open(lrgasp_oeb_data) as f:
-                aggregation_file = json.loads(f.read())
-
-            # get default id for metrics in x and y axis
+            with io.open(challenge_oeb_data, mode='r', encoding="utf-8") as f:
+                aggregation_file = json.load(f)
+            # get id for metrics in x and y axis
             metric_X = aggregation_file["datalink"]["inline_data"]["visualization"]["x_axis"]
             metric_Y = aggregation_file["datalink"]["inline_data"]["visualization"]["y_axis"]
-        else:
-            challenge_participants = []
 
-            # get default id for metrics in x and y axis
-            metric_X = None
-            metric_Y = None
-            for metrics_data in metrics_file:
-                if metric_X is None:
-                    metric_X = metrics_data["metrics"]["metric_id"]
-                elif metric_Y is None:
-                    metric_Y = metrics_data["metrics"]["metric_id"]
-                else:
-                    break
+            # add new participant data to aggregation file
+            new_participant_data = {}
+            for metrics_data in metrics:
+                participant_id = metrics_data["participant_id"]
+                if metrics_data["metrics"]["metric_id"] == metric_X:
+                    new_participant_data["metric_x"] = metrics_data["metrics"]["value"]
+                    new_participant_data["stderr_x"] = metrics_data["metrics"]["stderr"]
+                elif metrics_data["metrics"]["metric_id"] == metric_Y:
+                    new_participant_data["metric_y"] = metrics_data["metrics"]["value"]
+                    new_participant_data["stderr_y"] = metrics_data["metrics"]["stderr"]
+                if 'metric_x' in new_participant_data and 'metric_y' in new_participant_data:
+                    # copy the assessment files to output directory
+                    new_participant_data["participant_id"] = participant_id
+                    print("new participant_data: {}".format(new_participant_data))
+                    aggregation_file["datalink"]["inline_data"]["challenge_participants"].append(new_participant_data)
+                    new_participant_data = {}
 
-            # Setting the defaults in case nothing was found
-            if metric_X is None:
-                metric_X = "TPR"
-            if metric_Y is None:
-                metric_Y = "precision"
+            # add the rest of participants to manifest
+            for name in aggregation_file["datalink"]["inline_data"]["challenge_participants"]:
+                participants.append(name["participant_id"])
 
-            aggregation_file = {"_id": "LRGASP:{}_{}_Aggregation".format(DEFAULT_eventMark, lrgasp),
-                "challenge_ids": [lrgasp], "datalink": {
-                    "inline_data": {"challenge_participants": challenge_participants,
-                        "metrics": {"metric_x_id": METRICS['TPR'], "metric_y_id": METRICS['precision']},
-                        "visualization": {"type": "2D-plot", "x_axis": metric_X, "y_axis": metric_Y}}},
-                "type": "aggregation"}
+            #copy the updated aggregation file to output directory
+            per_challenge_output = os.path.join(output_dir, challenge)
+            if not os.path.exists(per_challenge_output):
+                os.makedirs(per_challenge_output)
+            summary_file = os.path.join(per_challenge_output, challenge_oeb_data.name)
+            with open(summary_file, 'w') as f:
+                json.dump(aggregation_file, f, sort_keys=True, indent=4, separators=(',', ': '))
 
-            # Get the info from the files in the directory
-            if os.path.isdir(lrgasp_oeb_data_dir):
-                print("Reading {}".format(lrgasp_oeb_data_dir))
-                for entry in os.scandir(lrgasp_oeb_data_dir):
-                    if entry.is_file() and entry.name.endswith(".json"):
-                        with open(entry.path, mode="r", encoding="utf-8") as ep:
-                            metrics_content = json.load(ep)
-                            if metrics_content.get("challenge") == lrgasp:
-                                challenge_participants.append(
-                                    {"metric_x": metrics_content["x"], "metric_y": metrics_content["y"],
-                                        "participant_id": metrics_content["toolname"]})
 
-        # add new participant data to aggregation file
-        new_participant_data = {}
-        participant_id = '(unknown)'
-        for metrics_data in metrics_file:
-            participant_id = metrics_data["participant_id"]
-            if metrics_data["metrics"]["metric_id"] == metric_X:
-                new_participant_data["metric_x"] = metrics_data["metrics"]["value"]
-            elif metrics_data["metrics"]["metric_id"] == metric_Y:
-                new_participant_data["metric_y"] = metrics_data["metrics"]["value"]
+            # Let's draw the assessment charts!
+            assessment_chart.print_chart(per_challenge_output, summary_file, challenge, "RAW")
+            #print_chart(per_challenge_output, summary_file, challenge, "SQR")
+            #print_chart(per_challenge_output, summary_file, challenge, "DIAG")
 
-        new_participant_data["participant_id"] = participant_id
-        aggregation_file["datalink"]["inline_data"]["challenge_participants"].append(new_participant_data)
-        metrics = {"metric_x_id": METRICS['TPR'], "metric_y_id": METRICS['precision']}
+            #generate manifest, only once per challenge, not per visualization variant
+            if not added_challenge_to_manifest:
+                obj = {
+                    "id": challenge,
+                    "participants": participants
+                }
+                info.append(obj)
+                added_challenge_to_manifest = True
 
-        aggregation_file["datalink"]["inline_data"]["metrics"] = metrics
-
-        # add the rest of participants to manifest
-        for name in aggregation_file["datalink"]["inline_data"]["challenge_participants"]:
-            participants.append(name["participant_id"])
-
-        # copy the updated aggregation file to output directory
-        summary_dir = os.path.join(lrgasp_dir, lrgasp + ".json")
-        with open(summary_dir, 'w') as f:
-            json.dump(aggregation_file, f, sort_keys=True, indent=4, separators=(',', ': '))
-
-        # Let's draw the assessment charts!
-        assessment_chart.print_chart(lrgasp_dir, summary_dir, lrgasp, "RAW")
-        assessment_chart.print_chart(lrgasp_dir, summary_dir, lrgasp, "SQR")
-        assessment_chart.print_chart(lrgasp_dir, summary_dir, lrgasp, "DIAG")
-
-        # generate manifest
-        obj = {"id": lrgasp, "participants": participants,
-            'timestamp': datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()}
-
-        info.append(obj)
-
-    with open(os.path.join(output_dir, "Manifest.json"), mode='w', encoding="utf-8") as f:
+    with io.open(os.path.join(output_dir, "Manifest.json"), mode='w', encoding="utf-8") as f:
         json.dump(info, f, sort_keys=True, indent=4, separators=(',', ': '))
+
 
 
 if __name__ == '__main__':
