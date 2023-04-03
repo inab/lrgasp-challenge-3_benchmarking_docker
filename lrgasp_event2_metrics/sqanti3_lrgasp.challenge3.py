@@ -2165,16 +2165,16 @@ def run(args):
         if "mouse_num_iso" in challenge:
             data_id = community + ":" + challenge + "_num_iso_" + participant
             assessment_num_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                         "num_isoforms", non_model_results_values[0][0], 0)
+                                                                         "num_iso", non_model_results_values[0][0], 0)
             data_id = community + ":" + challenge + "_Mapping_" + participant
             assessment_map_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                         "map_isoforms", non_model_results_values[1][0], 0)
+                                                                         "map_iso", non_model_results_values[1][0], 0)
             ALL_ASSESSMENTS.extend([assessment_num_iso, assessment_map_iso])
 
         if "mouse_num_trans_vs_with_coding_potential" in challenge:
             data_id = community + ":" + challenge + "_num_trans_" + participant
             assessment_num_trans = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                           "num_trans", non_model_results_values[0][0], 0)
+                                                                           "num_iso", non_model_results_values[0][0], 0)
             data_id = community + ":" + challenge + "_with_coding_potential_" + participant
             assessment_coding_potential = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                                   "with_coding_potential", non_model_results_values[3][0], 0)

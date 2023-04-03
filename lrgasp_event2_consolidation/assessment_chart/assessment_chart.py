@@ -220,6 +220,9 @@ def print_chart(lrgasp_dir, summary_dir, challenge, classification_type):
     y_values = []
     with io.open(summary_dir, mode='r', encoding="utf-8") as f:
         aggregation_file = json.load(f)
+        # extract the x and y labels
+        x_label = aggregation_file["datalink"]["inline_data"]["visualization"]["x_axis"]
+        y_label = aggregation_file["datalink"]["inline_data"]["visualization"]["y_axis"]
         for participant_data in aggregation_file["datalink"]["inline_data"]["challenge_participants"]:
             if "tool_id" in participant_data:
                 tools.append(participant_data['tool_id'])
@@ -230,12 +233,12 @@ def print_chart(lrgasp_dir, summary_dir, challenge, classification_type):
 
     ax = plt.subplot()
     for i, val in enumerate(tools, 0):
-        markers = [".", "o", "v", "^", "<", ">", "1", "2", "3", "4", "8", "s", "p", "P", "*", "h", "H", "+",
-                   "x", "X",
-                   "D",
-                   "d", "|", "_", ","]
+        markers = [".", "o", "v", "^", "<", ">", "1", "2", "3",
+                   "4", "8", "s", "p", "P", "*", "h", "H", "+",
+                   "x", "X", "D", "d", "|", "_", ","]
         colors = ['#5b2a49', '#a91310', '#9693b0', '#e7afd7', '#fb7f6a', '#0566e5', '#00bdc8', '#cf4119', '#8b123f',
-                  '#b35ccc', '#dbf6a6', '#c0b596', '#516e85', '#1343c3', '#7b88be']
+                  '#b35ccc', '#dbf6a6', '#c0b596', '#516e85', '#1343c3', '#7b88be', '#ff5733', '#33ff57', '#5733ff',
+                  '#f7dc6f', '#6c3483', '#d35400', '#2980b9', '#6f0000', '#2e6da4', '#48c9b0']
 
         ax.errorbar(x_values[i], y_values[i], linestyle='None', marker=markers[i],
                     markersize='15', markerfacecolor=colors[i], markeredgecolor=colors[i], capsize=6,
@@ -248,8 +251,8 @@ def print_chart(lrgasp_dir, summary_dir, challenge, classification_type):
 
     # set plot title depending on the analysed tool
 
-    ax.set_xlabel("True Positive Rate - % driver genes correctly predicted", fontsize=12)
-    ax.set_ylabel("Precision - % true positives over total predicted", fontsize=12)
+    ax.set_xlabel(x_label, fontsize=12)
+    ax.set_ylabel(y_label, fontsize=12)
 
     # Shrink current axis's height  on the bottom
     box = ax.get_position()
