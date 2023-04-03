@@ -15,7 +15,6 @@ DEFAULT_OEB_API = "https://dev-openebench.bsc.es/api/scientific/graphql"
 DEFAULT_eventMark_id = "OEBE0010000010"
 METRICS = {"precision": "OEBM0010000001", "TPR": "OEBM0010000002"}
 
-
 def main(args):
     # input parameters
     data_dir = args.benchmark_data
@@ -47,11 +46,6 @@ def main(args):
     # add manifest to participant data
     with open(participant_path, mode='w', encoding="utf-8") as f:
         json.dump(participant_data, f, sort_keys=True, indent=4, separators=(',', ': '))
-
-
-
-
-
 
 ##get existing aggregation datasets for that challenges
 def query_OEB_DB(bench_event_id):
@@ -98,7 +92,7 @@ def query_OEB_DB(bench_event_id):
 
 
 # function to populate bench_dir with existing aggregations
-def getOEBAggregations(response, output_dir):
+def getOEBAggregations (response, output_dir):
     for challenge in response:
 
         challenge['datasets'][0]['datalink']["inline_data"] = json.loads(

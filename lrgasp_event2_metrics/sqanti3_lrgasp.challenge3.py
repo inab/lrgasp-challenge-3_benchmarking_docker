@@ -1579,7 +1579,7 @@ def isoformClassification(args, isoforms_by_chr, refs_1exon_by_chr, refs_exons_b
     ## read coverage files if provided
     if args.coverage is not None:
         print("**** Reading Splice Junctions coverage files.", file=sys.stdout)
-        SJcovNames, SJcovInfo = STARcov_parser(args.coverage + "splice_junctions.bed")
+        SJcovNames, SJcovInfo = STARcov_parser(args.coverage)
         fields_junc_cur = FIELDS_JUNC + SJcovNames  # add the samples to the header
     else:
         SJcovNames, SJcovInfo = None, None
@@ -2127,83 +2127,67 @@ def run(args):
 
     for challenge in challenges_ids:
         # if challenge contains "num_iso" then save the number of isoforms as assessment_TPR and mapping isoforms as assessment_precision
-        if "num_iso" in challenge:
-            data_id_1 = community + ":" + challenge + "_total_" + participant
-            assessment_num_iso = JSON_templates.write_assessment_dataset(data_id_1, community, challenge, participant,
+        if "mouse_avg_len" in challenge:
+            data_id = community + ":" + challenge + "_avg_len_" + participant
+            assessment_avg_len = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                          "avg_len", non_model_results_values[2][0], 0)
+            # add number of isoforms to the list of assessments
+            data_id = community + ":" + challenge + "_num_iso_" + participant
+            assessment_num_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                          "num_iso", non_model_results_values[0][0], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_avg_len, assessment_num_iso])
+
+        if "mouse_%_BUSCO_gene_found_vs_complete" in challenge:
+            # Calculate the percentage of BUSCO genes found (Complete and single-copy + Complete and duplicated)
+            busco_gene_found_percentage = BUSCO_results_values[0][1] + BUSCO_results_values[1][1] + BUSCO_results_values[2][1]
+            data_id = community + ":" + challenge + "_%BUSCO_gene_found_" + participant
+            assessment_busco_gene_found = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                   "%_BUSCO_gene_found", busco_gene_found_percentage, 0)
+            data_id = community + ":" + challenge + "_%BUSCO_gene_complete_" + participant
+            assessment_busco_gene_complete = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                      "%_BUSCO_gene_complete", BUSCO_results_values[0][1] + BUSCO_results_values[1][1], 0)
+            ALL_ASSESSMENTS.extend([assessment_busco_gene_found, assessment_busco_gene_complete])
+
+        if "mouse_%_CAGE_supp_trans_vs_%_QuantSeq_supp_trans" in challenge:
+            # TODO: Add the CAGE and QuantSeq supported transcript percentages (These values are missing in the provided data)
+            pass
+
+        if "mouse_%_canonical_SJ_vs_%_SJ_SR_coverage" in challenge:
+            data_id = community + ":" + challenge + "_%CanonicalSJ_" + participant
+            assessment_canonical_SJ = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                              "%_canonical_SJ", 100 - float(non_model_results_values[9][1]), 0)
+            data_id = community +         ":" + challenge + "_%SJ_SRCoverage_" + participant
+            assessment_SJ_SR_coverage = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                          "%_SJ_SR_coverage", float(non_model_results_values[8][1]), 0)
+            ALL_ASSESSMENTS.extend([assessment_canonical_SJ, assessment_SJ_SR_coverage])
+
+        if "mouse_num_iso" in challenge:
+            data_id = community + ":" + challenge + "_num_iso_" + participant
+            assessment_num_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                          "num_isoforms", non_model_results_values[0][0], 0)
-            data_id_2 = community + ":" + challenge + "_Mapping_" + participant
-            assessment_map_iso = JSON_templates.write_assessment_dataset(data_id_2, community, challenge, participant,
+            data_id = community + ":" + challenge + "_Mapping_" + participant
+            assessment_map_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                          "map_isoforms", non_model_results_values[1][0], 0)
             ALL_ASSESSMENTS.extend([assessment_num_iso, assessment_map_iso])
 
-        if "sirvs" in challenge:
-            data_id_3 = community + ":" + challenge + ":_TPR_" + ":" + participant
-            assessment_TPR = JSON_templates.write_assessment_dataset(data_id_3, community, challenge, participant,
+        if "mouse_num_trans_vs_with_coding_potential" in challenge:
+            data_id = community + ":" + challenge + "_num_trans_" + participant
+            assessment_num_trans = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                           "num_trans", non_model_results_values[0][0], 0)
+            data_id = community + ":" + challenge + "_with_coding_potential_" + participant
+            assessment_coding_potential = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                  "with_coding_potential", non_model_results_values[3][0], 0)
+            ALL_ASSESSMENTS.extend([assessment_num_trans, assessment_coding_potential])
+
+        if "mouse_sirvs" in challenge:
+            data_id = community + ":" + challenge + "_SIRV_TPR_" + participant
+            assessment_TPR = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                      "TPR", SIRVs_results_values[7][0], 0)
-            data_id_4 = community + ":" + challenge + ":_Precision_" + ":" + participant
-            assessment_precision = JSON_templates.write_assessment_dataset(data_id_4, community, challenge, participant,
+            data_id = community + ":" + challenge + "_SIRV_Precision_" + participant
+            assessment_precision = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                            "precision", SIRVs_results_values[8][0], 0)
             ALL_ASSESSMENTS.extend([assessment_TPR, assessment_precision])
-
-        if "%_full_Illumina_support_vs_%_coding_transcripts" in challenge:
-            data_id_5 = community + ":" + challenge + "_%SJSupport_" + participant
-            assessment_full_illumina_support = JSON_templates.write_assessment_dataset(data_id_5, community, challenge, participant,
-                                                                         "full_illumina_support", non_model_results_values[4][1], 0)
-            data_id_6 = community + ":" + challenge + "_%CodingTranscripts_" + participant
-            assessment_coding_transcripts = JSON_templates.write_assessment_dataset(data_id_6, community, challenge, participant,
-                                                                         "coding_transcripts", non_model_results_values[3][1], 0)
-            ALL_ASSESSMENTS.extend([assessment_full_illumina_support, assessment_coding_transcripts])
-
-        if '%_non-canonical_SJ_vs_%_SJ_SR_coverage' in challenge:
-            data_id_7 = community + ":" + challenge + "_%NonCanonicalSJ_" + participant
-            assessment_non_canonical_SJ = JSON_templates.write_assessment_dataset(data_id_7, community, challenge, participant,
-                                                                            "non_canonical_SJ", non_model_results_values[9][1], 0)
-            data_id_8 = community + ":" + challenge + "_%SJ_SRCoverage_" + participant
-            assessment_SJ_SR_coverage = JSON_templates.write_assessment_dataset(data_id_8, community, challenge, participant,
-                                                                            "SJ_SR_coverage", non_model_results_values[8][1], 0)
-            ALL_ASSESSMENTS.extend([assessment_non_canonical_SJ, assessment_SJ_SR_coverage])
-
-        # TODO: add multi_exon evaluation (currently missing!!!)
-        #if 'mouse_%_mapping_to_genome_vs_%_multi-exonic_isoforms' in challenge:
-        #    data_id_9 = community + ":" + challenge + "_%Mapping_" + participant
-        #    assessment_mouse_mapping = JSON_templates.write_assessment_dataset(data_id_9, community, challenge, participant,
-        #                                                                    "mouse_mapping", non_model_results_values[1][1], 0)
-        #    data_id_10 = community + ":" + challenge + "_%MultiExonicIsoforms_" + participant
-        #    assessment_multi_exonic_isoforms = JSON_templates.write_assessment_dataset(data_id_10, community, challenge, participant,
-        #                                                                    "multi_exonic_isoforms", non_model_results_values[2][1], 0)
-
-        #    ALL_ASSESSMENTS.extend([assessment_mouse_mapping, assessment_multi_exonic_isoforms])
-
-        if '%_mapping_to_genome_vs_%_full_Illumina_support' in challenge:
-            data_id_9 = community + ":" + challenge + "_%Mapping_" + participant
-            assessment_per_mapping = JSON_templates.write_assessment_dataset(data_id_9, community, challenge, participant,
-                                                                            "%Mapping", non_model_results_values[1][1], 0)
-
-            data_id_10 = community + ":" + challenge + "_%FullIlluminaSupport_" + participant
-            assessment_full_illumina_support = JSON_templates.write_assessment_dataset(data_id_10, community, challenge, participant,
-                                                                            "full_illumina_support", non_model_results_values[4][1], 0)
-
-            ALL_ASSESSMENTS.extend([assessment_per_mapping, assessment_full_illumina_support])
-
-        if "num_busco_gene_compl-dupl_vs_num_busco_gene_compl-single" in challenge:
-            data_id_11 = community + ":" + challenge + "_BuscoGeneComplDupl_" + participant
-            assessment_busco_gene_compl_dupl = JSON_templates.write_assessment_dataset(data_id_11, community, challenge, participant,
-                                                                            "busco_gene_compl_dupl", BUSCO_results_values[1][0], 0)
-            data_id_12 = community + ":" + challenge + "_BuscoGeneComplSingle_" + participant
-            assessment_busco_gene_compl_single = JSON_templates.write_assessment_dataset(data_id_12, community, challenge, participant,
-                                                                            "busco_gene_compl_single", BUSCO_results_values[0][0], 0)
-
-            ALL_ASSESSMENTS.extend([assessment_busco_gene_compl_dupl, assessment_busco_gene_compl_single])
-
-        if "num_busco_gene_fragment_vs_num_busco_gene_missing" in challenge:
-            data_id_13 = community + ":" + challenge + "_BuscoGeneFragment_" + participant
-            assessment_busco_gene_fragment = JSON_templates.write_assessment_dataset(data_id_13, community, challenge, participant,
-                                                                            "busco_gene_fragment", BUSCO_results_values[2][0], 0)
-            data_id_14 = community + ":" + challenge + "_BuscoGeneMissing_" + participant
-            assessment_busco_gene_missing = JSON_templates.write_assessment_dataset(data_id_14, community, challenge, participant,
-                                                                            "busco_gene_missing", BUSCO_results_values[3][0], 0)
-
-            ALL_ASSESSMENTS.extend([assessment_busco_gene_fragment, assessment_busco_gene_missing])
 
 
     # once all assessments have been added, print to json file
@@ -2211,12 +2195,12 @@ def run(args):
         jdata = json.dumps(ALL_ASSESSMENTS, sort_keys=True, indent=4, separators=(',', ': '))
         f.write(jdata)
 
-    os.remove(outputClassPath + "_tmp")
-    os.remove(outputJuncPath + "_tmp")
+    #os.remove(outputClassPath + "_tmp")
+    #os.remove(outputJuncPath + "_tmp")
 
     # Remove the temp folder
-    if not args.keep_temp:
-        shutil.rmtree(args.dir)
+    #if not args.keep_temp:
+    #    shutil.rmtree(args.dir)
 
     print("SQANTI3 complete in {0} sec.".format(stop3 - start3), file=sys.stderr)
 
@@ -2403,7 +2387,7 @@ def split_input_run(args):
         args2.isoforms = x
         args2.novel_gene_prefix = str(i)
         args2.dir = d
-        args2.skip_report = True
+        args2.skip_report = False
         p = Process(target=run, args=(args2,))
         p.start()
         pools.append(p)
@@ -2516,11 +2500,9 @@ def main():
                         help='\t\tNumber of threads used during alignment by aligners. (default: 5)')
     parser.add_argument('-n', '--chunks', default=1, type=int,
                         help='\t\tNumber of chunks to split SQANTI3 analysis in for speed up (default: 1).')
-
     parser.add_argument('--out_path', help= '\t\t OpenEBench assessment output directory', required=True)
     parser.add_argument('--com', help='\t\t OpenEBench community ID', required=True)
     parser.add_argument('--participant_id', help='\t\t OpenEBench participant ID', required=True)
-
     parser.add_argument('-o', '--output', help='\t\tPrefix for output files.', required=False)
     parser.add_argument('-d', '--dir',
                         help='\t\tDirectory for output files. Default: Directory where the script was run.',
@@ -2562,6 +2544,7 @@ def main():
         sys.exit(1)
 
     # check if public reference data exists
+
     args.annotation = args.ref_dir + '/' + "lrgasp_sirvs4.gtf"
     args.genome = args.ref_dir + '/' + "lrgasp_grcm39_sirvs.fasta"
 
@@ -2685,8 +2668,7 @@ def main():
         f.write("Expression\t" + (os.path.basename(args.expression) if args.expression is not None else "NA") + "\n")
         f.write("Junction\t" + (os.path.basename(args.coverage) if args.coverage is not None else "NA") + "\n")
         f.write("CagePeak\t" + (os.path.basename(args.cage_peak) if args.cage_peak is not None else "NA") + "\n")
-        f.write(
-            "PolyA\t" + (os.path.basename(args.polyA_motif_list) if args.polyA_motif_list is not None else "NA") + "\n")
+        f.write("PolyA\t" + (os.path.basename(args.polyA_motif_list) if args.polyA_motif_list is not None else "NA") + "\n")
         f.write("PolyAPeak\t" + (os.path.basename(args.polyA_peak) if args.polyA_peak is not None else "NA") + "\n")
         f.write("IsFusion\t" + str(args.is_fusion) + "\n")
 

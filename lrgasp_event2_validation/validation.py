@@ -28,7 +28,7 @@ def main(args):
     community_id = args.community_id
     challenges_ids = args.challenges_ids
     participant_id = args.participant_id
-    splice_junctions = args.coverage + '/' + "splice_junctions.bed"
+    splice_junctions = args.coverage + '/' + "*.tab"
     out_path = args.output
 
     # Assuring the output path does exist
@@ -57,14 +57,12 @@ def validate_input_data(input, public_ref_dir, community_id, challenges_ids, par
     :param entry_json: Entry JSON file that is requiered for uploading the submission. More info here: https://lrgasp.github.io/lrgasp-submissions/docs/metadata.html
     """
 
-    VALID_CHALLENGES_IDS = ["mouse_num_iso",
-                            "mouse_sirvs",
-                            "mouse_%_full_Illumina_support_vs_%_coding_transcripts",
-                            "mouse_%_mapping_to_genome_vs_%_full_Illumina_support",
-                            "mouse_num_busco_gene_compl-dupl_vs_num_busco_gene_compl-single",
-                            "mouse_num_busco_gene_fragment_vs_num_busco_gene_missing",
-                            "mouse_%_non-canonical_SJ_vs_%_SJ_SR_coverage"
-                            ]
+    VALID_CHALLENGES_IDS = ['mouse_avg_len',
+                            'mouse_%_BUSCO_gene_found_vs_complete',
+                            'mouse_%_canonical_SJ_vs_%_SJ_SR_coverage',
+                            'mouse_num_iso',
+                            'mouse_num_trans_vs_with_coding_potential',
+                            'mouse_sirvs']
 
     # validate challenges ids
     challenges_ids_split = challenges_ids.split(" ")
