@@ -57,10 +57,12 @@ def validate_input_data(input, public_ref_dir, community_id, challenges_ids, par
     :param entry_json: Entry JSON file that is requiered for uploading the submission. More info here: https://lrgasp.github.io/lrgasp-submissions/docs/metadata.html
     """
 
-    VALID_CHALLENGES_IDS = ['mouse_avg_len',
+    VALID_CHALLENGES_IDS = ['mouse_len',
                             'mouse_%_BUSCO_gene_found_vs_complete',
                             'mouse_%_canonical_SJ_vs_%_SJ_SR_coverage',
-                            'mouse_num_iso',
+                            'mouse_trans',
+                            'mouse_%_trans_with_intra-priming_vs_rt_switching',
+                            'mouse_%_CAGE_vs_%_QuantSeq_supp_trans',
                             'mouse_num_trans_vs_with_coding_potential',
                             'mouse_sirvs']
 

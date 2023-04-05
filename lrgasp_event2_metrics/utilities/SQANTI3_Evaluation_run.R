@@ -41,7 +41,7 @@ library(Rsamtools)
 setwd(utilities.path)
 source("LRGASP_calculations.R")
 
-LRGASP_calculations_challenge3(NAME = name , out.dir = rdata,
+LRGASP_calculations_challenge3(NAME = name, out.dir = rdata,
                       class.file=class.file, junc.file=junc.file,
                       platform = platform,
                       functions.dir = utilities.path,

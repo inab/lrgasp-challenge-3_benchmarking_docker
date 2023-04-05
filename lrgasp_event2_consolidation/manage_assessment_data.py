@@ -180,16 +180,28 @@ def generate_manifest(data_dir, output_dir, participant_data):
         participant_id = '(unknown)'
 
         metric_name_map = {
-            "Number of transcripts": "num_iso",
+            "Number of transcripts": "num_trans",
+            "Number of mapping transcripts": "map_trans",
+
+            "Number of transcripts with coding potential": "with_coding_potential",
+
             "Average length of transcripts": "avg_len",
+            "Standard deviation of transcripts": "sd_len",
+
             "% BUSCO gene found (complete + fragment)": "%_BUSCO_gene_found",
             "% BUSCO gene complete": "%_BUSCO_gene_complete",
+
             "% Splice Junctions with short-read coverage": "%_SJ_SR_coverage",
             "% canonical Splice Junctions": "%_canonical_SJ",
-            "Number of mapping transcripts": "map_iso",
-            "Number of transcripts with coding potential": "with_coding_potential",
+
             "Recall": "TPR",
-            "Precision": "precision"
+            "Precision": "precision",
+
+            "% Transcripts supported by CAGE": "%_CAGE_supp_trans",
+            "% Transcripts supported by Quant-seq": "%_QuantSeq_supp_trans",
+
+            "% Transcripts with possible RT-switching": "%_rt_switching",
+            "% Transcripts with possible intra-priming": "%_intra_priming"
         }
 
         # Replace metric_X and metric_Y with the corresponding metric_id

@@ -2126,17 +2126,18 @@ def run(args):
     challenges_ids = args.challenges_ids.split(" ")
 
     for challenge in challenges_ids:
-        # if challenge contains "num_iso" then save the number of isoforms as assessment_TPR and mapping isoforms as assessment_precision
-        if "mouse_avg_len" in challenge:
-            data_id = community + ":" + challenge + "_avg_len_" + participant
-            assessment_avg_len = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                          "avg_len", non_model_results_values[2][0], 0)
-            # add number of isoforms to the list of assessments
-            data_id = community + ":" + challenge + "_num_iso_" + participant
-            assessment_num_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                          "num_iso", non_model_results_values[0][0], 0)
 
-            ALL_ASSESSMENTS.extend([assessment_avg_len, assessment_num_iso])
+        if "mouse_len" in challenge:
+            data_id = community + ":" + challenge + "_len_" + participant
+            assessment_avg_len = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                          "avg_len", non_model_results_values[2][0],
+                                                                         0)
+            data_id = community + ":" + challenge + "_kurt_len_" + participant
+            assessment_sd_len = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                          "sd_len", non_model_results_values[11][0],
+                                                                          0)
+
+            ALL_ASSESSMENTS.extend([assessment_avg_len, assessment_sd_len])
 
         if "mouse_%_BUSCO_gene_found_vs_complete" in challenge:
             # Calculate the percentage of BUSCO genes found (Complete and single-copy + Complete and duplicated)
@@ -2149,32 +2150,41 @@ def run(args):
                                                                                       "%_BUSCO_gene_complete", BUSCO_results_values[0][1] + BUSCO_results_values[1][1], 0)
             ALL_ASSESSMENTS.extend([assessment_busco_gene_found, assessment_busco_gene_complete])
 
-        if "mouse_%_CAGE_supp_trans_vs_%_QuantSeq_supp_trans" in challenge:
-            # TODO: Add the CAGE and QuantSeq supported transcript percentages (These values are missing in the provided data)
-            pass
+        if "mouse_%_CAGE_vs_%_QuantSeq_supp_trans" in challenge:
+            data_id = community + ":" + challenge + "_%CAGE_supp_trans_" + participant
+            assessment_cage_supported = JSON_templates.write_assessment_dataset(data_id, community, challenge,
+                                                                                participant,
+                                                                                "%_CAGE_supp_trans",
+                                                                                non_model_results_values[12][1], 0)
+            data_id = community + ":" + challenge + "_%QuantSeq_supp_trans_" + participant
+            assessment_quantseq_supported = JSON_templates.write_assessment_dataset(data_id, community, challenge,
+                                                                                    participant,
+                                                                                    "%_QuantSeq_supp_trans",
+                                                                                    non_model_results_values[13][1], 0)
+            ALL_ASSESSMENTS.extend([assessment_cage_supported, assessment_quantseq_supported])
 
         if "mouse_%_canonical_SJ_vs_%_SJ_SR_coverage" in challenge:
             data_id = community + ":" + challenge + "_%CanonicalSJ_" + participant
             assessment_canonical_SJ = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                               "%_canonical_SJ", 100 - float(non_model_results_values[9][1]), 0)
-            data_id = community +         ":" + challenge + "_%SJ_SRCoverage_" + participant
+            data_id = community + ":" + challenge + "_%SJ_SRCoverage_" + participant
             assessment_SJ_SR_coverage = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                           "%_SJ_SR_coverage", float(non_model_results_values[8][1]), 0)
-            ALL_ASSESSMENTS.extend([assessment_canonical_SJ, assessment_SJ_SR_coverage])
+            ALL_ASSESSMENTS.extend([assessment_SJ_SR_coverage, assessment_canonical_SJ])
 
-        if "mouse_num_iso" in challenge:
-            data_id = community + ":" + challenge + "_num_iso_" + participant
-            assessment_num_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                         "num_iso", non_model_results_values[0][0], 0)
+        if "mouse_trans" in challenge:
+            data_id = community + ":" + challenge + "_num_trans_" + participant
+            assessment_num_trans = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                         "num_trans", non_model_results_values[0][0], 0)
             data_id = community + ":" + challenge + "_Mapping_" + participant
-            assessment_map_iso = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                         "map_iso", non_model_results_values[1][0], 0)
-            ALL_ASSESSMENTS.extend([assessment_num_iso, assessment_map_iso])
+            assessment_map_trans = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                         "map_trans", non_model_results_values[1][0], 0)
+            ALL_ASSESSMENTS.extend([assessment_num_trans, assessment_map_trans])
 
         if "mouse_num_trans_vs_with_coding_potential" in challenge:
             data_id = community + ":" + challenge + "_num_trans_" + participant
             assessment_num_trans = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
-                                                                           "num_iso", non_model_results_values[0][0], 0)
+                                                                           "num_trans", non_model_results_values[0][0], 0)
             data_id = community + ":" + challenge + "_with_coding_potential_" + participant
             assessment_coding_potential = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                                   "with_coding_potential", non_model_results_values[3][0], 0)
@@ -2189,6 +2199,16 @@ def run(args):
                                                                            "precision", SIRVs_results_values[8][0], 0)
             ALL_ASSESSMENTS.extend([assessment_TPR, assessment_precision])
 
+        if 'mouse_%_trans_with_intra-priming_vs_rt_switching' in challenge:
+            data_id = community + ":" + challenge + "_%trans_with_intra_priming_" + participant
+            assessment_with_intra_priming = JSON_templates.write_assessment_dataset(data_id, community, challenge,
+                                                                                    participant, "%_intra_priming",
+                                                                                    non_model_results_values[6][1], 0)
+            data_id = community + ":" + challenge + "_%trans_with_rt_switching_" + participant
+            assessment_with_rt_switching = JSON_templates.write_assessment_dataset(data_id, community, challenge,
+                                                                                   participant, "%_rt_switching",
+                                                                                   non_model_results_values[7][1], 0)
+            ALL_ASSESSMENTS.extend([assessment_with_intra_priming, assessment_with_rt_switching])
 
     # once all assessments have been added, print to json file
     with open(args.out_path, mode='w', encoding="utf-8") as f:
@@ -2482,9 +2502,12 @@ def main():
     parser.add_argument("--force_id_ignore", action="store_true", default=True,
                         help="\t\t Allow the usage of transcript IDs non related with PacBio's nomenclature (PB.X.Y)")
     parser.add_argument("--aligner_choice", choices=['minimap2', 'deSALT', 'gmap'], default='minimap2')
-    parser.add_argument('--cage_peak', help='\t\tFANTOM5 Cage Peak (BED format, optional)')
-    parser.add_argument("--polyA_motif_list", help="\t\tRanked list of polyA motifs (text, optional)")
-    parser.add_argument("--polyA_peak", help='\t\tPolyA Peak (BED format, optional)')
+    parser.add_argument('--cage_peak', help='\t\tFANTOM5 Cage Peak (BED format, optional)',
+                        default=os.path.join(utilitiesPath, "refTSS.mouse.bed"))
+    parser.add_argument("--polyA_motif_list", help="\t\tRanked list of polyA motifs (text, optional)",
+                        default=os.path.join(utilitiesPath, "polyA_list.txt"))
+    parser.add_argument("--polyA_peak", help='\t\tPolyA Peak (BED format, optional)',
+                        default=os.path.join(utilitiesPath, "QuantSeq_ES.all_reps.bed"))
     parser.add_argument("--phyloP_bed", help="\t\tPhyloP BED for conservation score (BED, optional)")
     parser.add_argument("--skipORF", default=False, action="store_true", help="\t\tSkip ORF prediction (to save time)")
     parser.add_argument("--is_fusion", default=False, action="store_true",

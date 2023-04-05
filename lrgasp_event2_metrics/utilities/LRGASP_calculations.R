@@ -103,8 +103,17 @@ LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir
   # num of UJC
   num_UJC <- length(unique(sqanti_data$LRGASP_id))
   redundancy <- as.integer(num_isoforms)/num_UJC
-
-
+  
+  #Quant-seq
+  sqanti_data$TP_QuantSeq=apply(sqanti_data,1,quantseqTP_function) # 3' end has polyA motif or QuantSeq
+  TPR_quantseqTP_abs=length(which(sqanti_data$TP_QuantSeq==TRUE))
+  TPR_quantseqTP=TPR_quantseqTP_abs*100/dim(sqanti_data)[1] # rate for 3'end with QuantSeq support
+  
+  #CAGE peak
+  sqanti_data$TP_5prime=apply(sqanti_data,1,fiveTP_function) # 5' end matches a CAGE peak
+  TPR_5primeTP_abs=length(which(sqanti_data$TP_5prime==TRUE))
+  TPR_5primeTP=TPR_5primeTP_abs*100/dim(sqanti_data)[1] # rate for 5'end matching CAGE
+  
   # Write out results
   a.non_model_results=data.frame(row.names = c("Number of transcripts", "Mapping transcripts", "Average length", "Transcripts with coding potential",
                                                "Transcripts with Full Illumina SJ Support", "Non-canonical transcripts",
@@ -119,6 +128,7 @@ LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir
   a.non_model_results["Mapping transcripts","Absolute value"]=as.integer(mapping_isoforms)
   a.non_model_results["Mapping transcripts","Relative value (%)"]=round(mapping_rate, digits=2)
   a.non_model_results["Average length","Absolute value"]=round(average_length, digits=2)
+  a.non_model_results["Standard deviation length", "Absolute value"] = round(sd_length, digits = 2)
   a.non_model_results["Transcripts with coding potential","Absolute value"]=as.integer(coding_isoforms)
   a.non_model_results["Transcripts with coding potential", "Relative value (%)"]=round(perc_coding, digits=2)
   a.non_model_results["Transcripts with Full Illumina SJ Support","Absolute value"]=as.integer(full_Illumina_SJ_support)
@@ -135,6 +145,12 @@ LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir
   a.non_model_results["Non-canonical Splice Junctions", "Absolute value"]=as.integer(num_SJ_non_canonical)
   a.non_model_results["Non-canonical Splice Junctions", "Relative value (%)"]=round(perc_SJ_non_canonical, digits=2)
   a.non_model_results["Redundancy level","Absolute value"]=round(redundancy, digits=2)
+  
+  a.non_model_results["5' CAGE supported","Absolute value"]= TPR_5primeTP_abs
+  a.non_model_results["5' CAGE supported","Relative value (%)"]= round(TPR_5primeTP, digits = 2)
+  
+  a.non_model_results["3' QuantSeq supported","Absolute value"]= TPR_quantseqTP_abs
+  a.non_model_results["3' QuantSeq supported","Relative value (%)"]= round(TPR_quantseqTP, digits = 2)
 
   ### Evaluation of SIRVs
   ##############################################

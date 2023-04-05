@@ -176,3 +176,8 @@ addSC <- function(class_file){
   class_file$LRGASP_id <- paste0(class_file$structural_category, "_", class_file$LRGASP_id)
   return(class_file)
 }
+
+# add quantseqTP_function
+quantseqTP_function=function(X){
+  if(isTRUE(as.logical(X["within_polya_site"]))){TRUE}else{FALSE}
+}
