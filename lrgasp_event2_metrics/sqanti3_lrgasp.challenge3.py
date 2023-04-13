@@ -2109,8 +2109,10 @@ def run(args):
     BUSCO_results = pd.read_table(os.path.join(rdata_out, "BUSCO_results.txt"), sep="\t")
     non_model_results = pd.read_table(os.path.join(rdata_out, "non_model_results.txt"), sep="\t")
     SIRVs_results = pd.read_table(os.path.join(rdata_out, "SIRVs_results.txt"), sep="\t")
+    category_results = pd.read_table(os.path.join(rdata_out, "category_results.txt"), sep="\t")
 
     # replace nan with 0
+    category_results_values = category_results.values
     BUSCO_results_values = BUSCO_results.values
     BUSCO_results_values[np.isnan(BUSCO_results_values)] = 0
     non_model_results_values = non_model_results.values
@@ -2136,7 +2138,6 @@ def run(args):
             assessment_sd_len = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
                                                                           "sd_len", non_model_results_values[11][0],
                                                                           0)
-
             ALL_ASSESSMENTS.extend([assessment_avg_len, assessment_sd_len])
 
         if "mouse_%_BUSCO_gene_found_vs_complete" in challenge:
@@ -2209,6 +2210,103 @@ def run(args):
                                                                                    participant, "%_rt_switching",
                                                                                    non_model_results_values[7][1], 0)
             ALL_ASSESSMENTS.extend([assessment_with_intra_priming, assessment_with_rt_switching])
+
+        if "mouse_FSM" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[0][0], 0)
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[0][1], 0)
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+        if "mouse_ISM" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[1][0], 0)
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[1][1], 0)
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+        if "mouse_NIC" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[2][0], 0)
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[2][1], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+        if "mouse_NNC" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[3][0], 0)
+
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[3][1], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+        if "mouse_GenicGenomic" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[4][0], 0)
+
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[4][1], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+
+        if "mouse_Antisense" in challenge:
+
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[5][0], 0)
+
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[5][1], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+        if "mouse_Fusion" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[6][0], 0)
+
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[6][1], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+        if "mouse_Intergenic" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[7][0], 0)
+
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[7][1], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
+        if "mouse_GenicIntron" in challenge:
+            data_id = community + ":" + challenge + "_absolute_value_" + participant
+            assessment_absolute_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "absolute_value", category_results_values[8][0], 0)
+            data_id = community + ":" + challenge + "_relative_value_" + participant
+            assessment_relative_value = JSON_templates.write_assessment_dataset(data_id, community, challenge, participant,
+                                                                                "relative_value", category_results_values[8][1], 0)
+
+            ALL_ASSESSMENTS.extend([assessment_absolute_value, assessment_relative_value])
+
 
     # once all assessments have been added, print to json file
     with open(args.out_path, mode='w', encoding="utf-8") as f:
@@ -2568,7 +2666,7 @@ def main():
 
     # check if public reference data exists
 
-    args.annotation = args.ref_dir + '/' + "lrgasp_sirvs4.gtf"
+    args.annotation = args.ref_dir + '/' + "lrgasp_gencode_vM27_sirvs.gtf"
     args.genome = args.ref_dir + '/' + "lrgasp_grcm39_sirvs.fasta"
 
     if args.experiment_json is None:

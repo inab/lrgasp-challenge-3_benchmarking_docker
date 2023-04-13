@@ -242,11 +242,18 @@ def print_chart(lrgasp_dir, summary_dir, challenge, classification_type):
     y_values = []
     with io.open(summary_dir, mode='r', encoding="utf-8") as f:
         aggregation_file = json.load(f)
-        challenge_id = aggregation_file["challenge_ids"][0]
+        # check if the challenge_ids is a list or a string
+        if isinstance(aggregation_file["challenge_ids"], list):
+            challenge_id = aggregation_file["challenge_ids"][0]
+        else:
+            challenge_id = aggregation_file["challenge_ids"]
         # set parameters for optimization
         if challenge_id == 'mouse_len':
             better = "bottom-right"
-        elif challenge_id == 'mouse_%_trans_with_intra-priming_vs_rt_switching':
+        elif challenge_id == 'mouse_%_trans_with_intra-priming_vs_rt_switching' \
+                or challenge_id == 'mouse_Intergenic' or challenge_id == 'mouse_GenicIntron' \
+                or challenge_id == 'mouse_Fusion' or challenge_id == 'mouse_Antisense' \
+                or challenge_id == 'mouse_NIC' or challenge_id == 'mouse_NNC' or challenge_id == 'mouse_GenicGenomic':
             better = "bottom-left"
         else:
             better = "top-right"

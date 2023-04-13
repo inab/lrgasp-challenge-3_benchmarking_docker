@@ -201,7 +201,10 @@ def generate_manifest(data_dir, output_dir, participant_data):
             "% Transcripts supported by Quant-seq": "%_QuantSeq_supp_trans",
 
             "% Transcripts with possible RT-switching": "%_rt_switching",
-            "% Transcripts with possible intra-priming": "%_intra_priming"
+            "% Transcripts with possible intra-priming": "%_intra_priming",
+            
+            "Absolute value": "absolute_value",
+            "Relative value (%)": "relative_value"
         }
 
         # Replace metric_X and metric_Y with the corresponding metric_id

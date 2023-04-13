@@ -49,10 +49,10 @@ LRGASP_calculations_challenge3(NAME = name, out.dir = rdata,
                       organism = organism,
                       busco = busco)
 
-RMD = paste(utilities.path, "Evaluation_metrics.Rmd", sep = "/")
+#RMD = paste(utilities.path, "Evaluation_metrics.Rmd", sep = "/")
 
-rmarkdown::render(RMD, params = list(
-  output.directory = rdata,
-  Name = name,
-  Platform = platform ), output_file = report.file
-)
+#rmarkdown::render(RMD, params = list(
+#  output.directory = rdata,
+#  Name = name,
+#  Platform = platform ), output_file = report.file
+#)

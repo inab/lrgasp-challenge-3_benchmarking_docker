@@ -211,6 +211,28 @@ LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir
   busco_results[,"Relative value (%)"] = apply(busco_results,1, function(Z){
     round( ((Z[1]/total_BUSCO)*100), digits = 2)
     })
+  
+  ############
+  print("categroy evaluation")
+  evaluate_category <- function(category) {
+    print(paste0(category, " evaluation"))
+    sqanti_data_category = subset(sqanti_data, structural_category == category)
+    
+    a.category_results = data.frame(row.names = c("Number of isoforms"))
+    a.category_results[, "Absolute value"] = "-"
+    a.category_results[, "Relative value (%)"] = "-"
+    
+    a.category_results["Number of isoforms", "Absolute value"] = as.integer(dim(sqanti_data_category)[1])
+    a.category_results["Number of isoforms", "Relative value (%)"] = round(as.integer(dim(sqanti_data_category)[1]) / as.integer(num_isoforms) * 100, digits = 2)
+    
+    return(a.category_results)
+  }
+      
+  category_list = lapply(cat_labels, evaluate_category)
+  names(category_list) <- cat_labels
+  category_df <- do.call(rbind, category_list)
+  
+  # If you want to add row names as a separate column
 
   ####Create a list with all results and save all
   ###############################################
@@ -235,5 +257,6 @@ LRGASP_calculations_challenge3 <- function (NAME, class.file, junc.file, out.dir
    write.table(a.non_model_results, file = paste0(out.dir, "/non_model_results.txt"), sep = "\t", quote = F, row.names = T)
    write.table(b.SIRVs_results, file = paste0(out.dir, "/SIRVs_results.txt"), sep = "\t", quote = F, row.names = T)
    write.table(busco_results, file = paste0(out.dir, "/BUSCO_results.txt"), sep = "\t", quote = F, row.names = T)
+   write.table(category_df, file = paste0(out.dir, "/category_results.txt"), sep = "\t", quote = F, row.names = T)
 
 }
