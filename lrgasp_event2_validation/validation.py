@@ -94,7 +94,7 @@ def validate_input_data(input, public_ref_dir, community_id, challenges_ids, par
         exit(1)
 
     # check if public reference data exists
-    public_ref_annotation = public_ref_dir + '/' + "lrgasp_gencode_v38_sirvs.gtf"
+    public_ref_annotation = public_ref_dir + '/' + "lrgasp_gencode_vM27_sirvs.gtf"
     public_ref_genome = public_ref_dir + '/' + "lrgasp_grcm39_sirvs.fasta"
 
     if not os.path.exists(public_ref_annotation):
