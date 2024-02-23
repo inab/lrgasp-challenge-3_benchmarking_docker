@@ -11,6 +11,7 @@ SHELL ["conda", "run", "-n", "sqanti_env", "/bin/bash", "-c"]
 RUN apt-get update && wget https://github.com/Magdoll/cDNA_Cupcake/archive/refs/tags/v24.0.0.tar.gz && tar -xvf v24.0.0.tar.gz
 RUN mv cDNA_Cupcake-24.0.0 cDNA_Cupcake
 COPY . /app
+RUN chmod +x utilities/gmst/Gibbs3 utilities/gmst/gmhmmp utilities/gmst/probuild utilities/gtfToGenePred
 ENV PYTHONPATH "${PYTHONPATH}:/app/cDNA_Cupcake/sequence/"
 ENV PYTHONPATH "${PYTHONPATH}:/app/cDNA_Cupcake/"
 
