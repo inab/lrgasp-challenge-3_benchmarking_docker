@@ -2,9 +2,7 @@ name: sqanti3_lrgasp
 channels:
   - conda-forge
   - bioconda
-  - anaconda
   - r
-  - defaults
 dependencies:
   - busco
   - cython
